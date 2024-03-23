@@ -1,3 +1,6 @@
+// Multiplexed server using select()
+// this is covered on lect14_cliserver.pptx slide 11 and 12
+
 #define _POSIX_SOURCE
 #include <sys/socket.h>
 #include <sys/types.h>
