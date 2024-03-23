@@ -1,6 +1,19 @@
 // Multiplexed server using select()
 // this is covered on lect14_cliserver.pptx slide 11 and 12
 
+// To use this example:
+// `gcc lect14_example4.c`
+// `./a.out`
+// this will give you an ip and port number
+
+// On another terminal
+// use the ip and port number to connect using
+// `telnet IP_ADDR PORT_NUM`
+// anything you write on this terminal will be echo'd back by the server
+
+// telnet will give you an escape character like "^]", just enter `ctrl` and the character `]` to disconnect,
+// then type `close` to close telnet
+
 #define _POSIX_SOURCE
 #include <sys/socket.h>
 #include <sys/types.h>
