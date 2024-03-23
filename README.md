@@ -1,7 +1,7 @@
 # COP5570-proj-3
  Online tic-tac-toe multi-plex server
 
-To run:
+## To run:
 
 `make`
 
