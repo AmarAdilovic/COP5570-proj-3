@@ -13,6 +13,11 @@
 #include <signal.h>
 #include <sys/select.h>
 
+// Initialize nulls
+Game *game_head = NULL;
+User *user_head = NULL;
+
+
 void sig_chld(int signo)
 {
 	pid_t pid;

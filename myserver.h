@@ -36,12 +36,17 @@ typedef struct user_block {
 
 /* Global */
 extern User *user_head;
-extern Game *game;
+extern Game *game_head;
 
 /* Flag related */
 
 
 /* prototypes from game.c */
+Game *create_game(char *, char *);
+int move(char *, Game *);
+char *print_board(Game *);
+
+/* prototypes from myserver.c */
 
 
 
