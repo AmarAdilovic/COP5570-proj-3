@@ -1,4 +1,5 @@
 /reference/class_examples/a.out
 a.out
 myserver
-myserver.o
+*.o
+.vscode/

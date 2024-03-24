@@ -48,7 +48,7 @@ char *print_board(Game *);
 
 /* prototypes from myserver.c */
 
-
-
+/* prototypes from mycommands.c */
+char *help_command();
 
 #endif
