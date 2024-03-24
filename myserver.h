@@ -34,6 +34,7 @@ typedef struct user_block {
     Blocked_users* block_head; /* head of linked list of block users */
     Mail* mail_head; /* head of linked list of mails to user */
     struct user_block *next;
+    int message_num; /* count the current message number */
 } User;
 
 /* Global */
@@ -54,5 +55,10 @@ char *print_board(Game *);
 
 /* prototypes from mycommands.c */
 char *help_command();
+
+/* prototypes from messages.c */
+char *initial_messsage();
+char *welcome_message();
+char *login_failed_message();
 
 #endif
