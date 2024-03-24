@@ -45,9 +45,11 @@ extern Game *game_head;
 
 
 /* prototypes from game.c */
+Game *find_game(char *, char *);
 Game *create_game(char *, char *);
 int move(char *, Game *);
 char *print_board(Game *);
+
 
 /* prototypes from myserver.c */
 

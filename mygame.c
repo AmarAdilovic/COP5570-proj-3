@@ -9,6 +9,24 @@ Purpose: contains all tic tac toe related functions
 #include <stdlib.h>
 
 /*
+Game *find_game(char *user1, char *user2): find the existing game with given username of user1 and user2 as 
+argument. Return the pointer to the game and return NULL if not found
+*/
+
+Game *find_game(char *user1, char *user2) {
+    // pointer to head
+    Game *ptr = game_head;
+    // Find the game
+    while (ptr != NULL) {
+        if ((strcmp(ptr->black, user1) && strcmp(ptr->white, user2)) || (strcmp(ptr->black, user2) && strcmp(ptr->white, user1)))
+            return ptr;
+        ptr = ptr->next;
+    }   
+    return NULL;
+}
+
+
+/*
 Game *create_game(char *black, char *white): create a new game with given username for black and username for white
 as argument and return the address pointer to the new game struct
 */
