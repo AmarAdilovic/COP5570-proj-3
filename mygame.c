@@ -6,6 +6,7 @@ Purpose: contains all tic tac toe related functions
 #include "myserver.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 /*
 Game *create_game(char *black, char *white): create a new game with given username for black and username for white
@@ -140,7 +141,7 @@ int move(char *cor, Game *ptr) {
         return -1;
 
     // set the position to the color
-    ptr->board[*cor - 'A'][*(cor+1) - '1'] == color;
+    ptr->board[*cor - 'A'][*(cor+1) - '1'] = color;
 
     // return status of the board (win, draw, not finish)
     return isWin(ptr);
