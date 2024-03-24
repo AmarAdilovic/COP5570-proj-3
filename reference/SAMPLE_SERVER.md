@@ -134,3 +134,15 @@ Commands supported:
   ?                       # print this message
 You have no unread message.
 <amar2: 0>
+
+
+### when sending a mail to a user
+<amar: 1> mail puffvu hello world
+Please input mail body, finishing with '.' at the beginning of a line
+
+another test
+a second test
+.third test
+Message sent
+
+#### the "third test" text will not be visible to the user

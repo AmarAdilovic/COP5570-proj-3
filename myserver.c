@@ -58,7 +58,6 @@ User *create_user(char *username, char *password) {
     User **ptr_ptr = &user_head;
     // pointer to head
     User *ptr = user_head;
-    int i, j;
 
     // find a place to add new user
     while (ptr != NULL) {
@@ -92,7 +91,8 @@ User *create_user(char *username, char *password) {
 	ptr->win_match = 0;
 	ptr->loss_match = 0;
 	ptr->status = 0;
-	ptr->client_fd = -1; 
+	ptr->client_fd = -1;
+	ptr->message_num = 0; 
     ptr->next = NULL;
     *ptr_ptr = ptr; /* This can help handle NULL(empty linked list) case */
     return ptr;
@@ -132,8 +132,9 @@ int main(int argc, char * argv[])
 	struct sockaddr_in addr, recaddr;
 	struct sigaction abc;
 	int client[MAXCONN];
+	// User *users;
 	char buf[100];
-	fd_set allset, rset;
+	fd_set allset, rset;	
 	int maxfd;
 
 	abc.sa_handler = sig_chld;
@@ -214,9 +215,8 @@ int main(int argc, char * argv[])
 					client[i] = rec_sock; 
 					FD_SET(client[i], &allset);
 
-					// call the help command to display the possible commands to the user
 					// add one for the null terminator
-					write(client[i], help_command(), strlen(help_command()) + 1);
+					write(client[i], initial_messsage(), strlen(initial_messsage()) + 1);
 
 					break;
 				}
@@ -261,3 +261,7 @@ int main(int argc, char * argv[])
 	}
 }
 
+// TODO
+// test char limit for example server read
+// test control character clearing
+// confirm exit and quit are aliases
