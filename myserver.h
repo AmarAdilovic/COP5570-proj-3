@@ -33,7 +33,7 @@ typedef struct user_block {
     int client_fd; /* -1 if the user is offline */
     Blocked_users* block_head; /* head of linked list of block users */
     Mail* mail_head; /* head of linked list of mails to user */
-    struct user_block next;
+    struct user_block *next;
 } User;
 
 /* Global */
@@ -44,9 +44,11 @@ extern Game *game_head;
 
 
 /* prototypes from game.c */
+Game *find_game(char *, char *);
 Game *create_game(char *, char *);
 int move(char *, Game *);
 char *print_board(Game *);
+
 
 /* prototypes from myserver.c */
 
