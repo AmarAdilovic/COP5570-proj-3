@@ -1,5 +1,6 @@
 #define _POSIX_SOURCE
 #include "myserver.h"
+#include <string.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -47,7 +48,7 @@ int main(int argc, char * argv[])
 	sigaction(SIGCHLD, &abc, NULL);
 
 	if (argc < 2) {
-		printf("Usage: a.out port.\n");
+		printf("Usage: ./myserver PORT_NUMBER\n");
 		exit(0);
 	}
 
@@ -73,6 +74,7 @@ int main(int argc, char * argv[])
 	}
 
 	printf("ip = %s, port = %d\n", inet_ntoa(addr.sin_addr), htons(addr.sin_port));
+	printf("To connect to the server: `telnet %s %d`\n", inet_ntoa(addr.sin_addr), htons(addr.sin_port));
 
 	if (listen(sockfd, 5) < 0) {
 		perror(": bind");
@@ -116,10 +118,15 @@ int main(int argc, char * argv[])
 				if (client[i] < 0) {
 					client[i] = rec_sock; 
 					FD_SET(client[i], &allset);
+
+					// call the help command to display the possible commands to the user
+					// add one for the null terminator
+					write(client[i], help_command(), strlen(help_command()) + 1);
+
 					break;
 				}
 			}
-			if (i== MAXCONN) {
+			if (i == MAXCONN) {
 				printf("too many connections.\n");
 				close(rec_sock);
 			}
@@ -138,8 +145,6 @@ int main(int argc, char * argv[])
 					client[i] = -1;
 				} else {
 					write(client[i], buf, num);
-                    /* this is just to test how the current server works */
-                    write(client[i], "testing\n", 9);
 				}
 			}
 		}
