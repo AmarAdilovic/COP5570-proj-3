@@ -19,6 +19,36 @@ Game *game_head = NULL;
 User *user_head = NULL;
 
 
+// the buf will usually have a carriage return and new line appended to the end,
+// however, sometimes it may have an undefined number of new lines, carriage returns, or other characters
+// for example, when entering "?" on the client, the server received "?\r\np\r\n\n" or "?\r\nt\n\r\n\x01"
+char* extractString(const char* input) {
+	// Determine the length of the printable character sequence (assuming non-printable characters do not occur in the middle of the string)
+	int length = 0;
+	for (int i = 0; input[i] != '\0'; ++i) {
+		unsigned char ch = input[i]; // Use unsigned char to handle characters correctly
+		if (ch >= 32 && ch <= 126) {
+			length++;
+		} else {
+			break;
+		}
+	}
+
+    // Allocate memory for the new string (+ null terminator)
+    char* result = (char*)malloc(length + 1);
+    if (result == NULL) {
+        printf("Memory allocation failed\n");
+        return NULL;
+    }
+
+    // Copy the printable characters to the new string
+    strncpy(result, input, length);
+    result[length] = '\0'; // Null-terminate the new string
+
+    return result;
+}
+
+
 void sig_chld(int signo)
 {
 	pid_t pid;
@@ -144,7 +174,22 @@ int main(int argc, char * argv[])
 					FD_CLR(client[i], &allset);
 					client[i] = -1;
 				} else {
-					write(client[i], buf, num);
+					// command has been written, need to evaluate it now
+					char *extractedBuf = extractString(buf);
+					if (strcmp(extractedBuf, "help") == 0 || strcmp(extractedBuf, "?") == 0) {
+						write(client[i], help_command(), strlen(help_command()) + 1);
+					}
+					else if (strcmp(extractedBuf, "exit") == 0 || strcmp(extractedBuf, "quit") == 0) {
+						// TODO: From the client-side this seems correct (the same behavior as the example server)
+						// but will need to track which user logged out
+						close(client[i]);
+						FD_CLR(client[i], &allset);
+						client[i] = -1;
+					}
+					else {
+						// TODO: This should be a catch-all for unknown commands, for now echo the command back to the client
+						write(client[i], buf, num);
+					}
 				}
 			}
 		}

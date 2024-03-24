@@ -35,10 +35,10 @@ char *help_command() {
     "  #mail <id> <title>       # Send id a mail\n"
     "  #info <msg>              # change your information to <msg>\n"
     "  #passwd <new>            # change password\n"
-    "  #exit                    # quit the system\n"
-    "  #quit                    # quit the system\n"
-    "  #help                    # print this message\n"
-    "  #?                       # print this message\n";
+    "  exit                    # quit the system\n"
+    "  quit                    # quit the system\n"
+    "  help                    # print this message\n"
+    "  ?                       # print this message\n";
 
     return RETURNED_STRING;
 }
