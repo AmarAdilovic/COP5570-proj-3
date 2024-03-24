@@ -30,8 +30,10 @@ typedef struct user_block {
     int loss_match; /* number of loss matchs */
     int draw_match; /* number of draw matchs */
     int status; /* 0 is offline, 1 is online */
+    int client_fd; /* -1 if the user is offline */
     Blocked_users* block_head; /* head of linked list of block users */
     Mail* mail_head; /* head of linked list of mails to user */
+    struct user_block next;
 } User;
 
 /* Global */

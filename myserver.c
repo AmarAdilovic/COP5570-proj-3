@@ -48,6 +48,71 @@ char* extractString(const char* input) {
     return result;
 }
 
+/*
+User *create_user(char *username, char *password): create a new user with given username and password
+as argument and return the address pointer to the new user struct
+*/
+
+User *create_user(char *username, char *password) {
+    // pointer to pointer of head
+    User **ptr_ptr = &user_head;
+    // pointer to head
+    User *ptr = user_head;
+    int i, j;
+
+    // find a place to add new user
+    while (ptr != NULL) {
+        ptr_ptr = &(ptr->next);
+        ptr = ptr->next;
+    }
+
+    // allocate memory for new user
+    ptr = malloc(sizeof(User));
+    if (ptr == NULL) {
+        fprintf(stderr, "Out of memory when using create_user function\n");
+        return NULL;
+    }
+
+    // set username and password
+    ptr->username = strdup(username);
+    if (ptr->username == NULL) {
+        fprintf(stderr, "Out of memory when using create_user function\n");
+        free(ptr);
+        return NULL;
+    }
+
+    ptr->password = strdup(password);
+    if (ptr->password == NULL) {
+        fprintf(stderr, "Out of memory when using create_user function\n");
+        free(ptr);
+        return NULL;
+    }
+
+	ptr->draw_match = 0;
+	ptr->win_match = 0;
+	ptr->loss_match = 0;
+	ptr->status = 0;
+	ptr->client_fd = -1; 
+    ptr->next = NULL;
+    *ptr_ptr = ptr; /* This can help handle NULL(empty linked list) case */
+    return ptr;
+}
+
+/*
+User *find_user(char *username): find the existing user using the given name as argument and return 
+the pointer to the user object. return NULL if not found
+*/
+User *find_user(char *username) {
+	// pointer to head
+    User *ptr = user_head;
+	while (ptr != NULL) {
+		if (strcmp(ptr->username, username))
+			return ptr;
+		ptr = ptr->next;
+	}
+	return NULL;
+
+}
 
 void sig_chld(int signo)
 {
