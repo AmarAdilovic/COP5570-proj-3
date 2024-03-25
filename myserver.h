@@ -4,21 +4,10 @@
 #include <time.h>
 
 /* Typedefs */
-typedef struct game_block {
-    int board[3][3]; /* 0 is none, 1 is white, 2 is black */ 
-    char* black; /* username of black */
-    char* white; /* username of white */
-    time_t last_time_white; // Last track time of white
-    time_t last_time_black; // Last track time of black
-    time_t time_left_white; // Time limit left for white
-    time_t time_left_black; // Time limit left for black
-    struct game_block *next;
-} Game;
- 
 typedef struct block_block {
     char *username;
     struct block_block *next;
-} Blocked_users;
+} Blocked_user;
 
 typedef struct mail_block {
     char *username; /* name of sender */
@@ -35,11 +24,28 @@ typedef struct user_block {
     int loss_match; /* number of loss matchs */
     int draw_match; /* number of draw matchs */
     int status; /* 0 is offline, 1 is online, 2 is waiting on password */
-    Blocked_users* block_head; /* head of linked list of block users */
+    Blocked_user* block_head; /* head of linked list of block users */
     Mail* mail_head; /* head of linked list of mails to user */
     struct user_block *next;
     int message_num; /* count the current message number */
 } User;
+
+typedef struct observer_block {
+    User *user; /* pointer to user currently observe */
+    struct observer_block *next;
+} Observer;
+
+typedef struct game_block {
+    int board[3][3]; /* 0 is none, 1 is white, 2 is black */ 
+    char* black; /* username of black */
+    char* white; /* username of white */
+    time_t last_time_white; // Last track time of white
+    time_t last_time_black; // Last track time of black
+    time_t time_left_white; // Time limit left for white
+    time_t time_left_black; // Time limit left for black
+    Observer *observer_head; /* head of linked list of observers of the current game */
+    struct game_block *next;
+} Game;
 
 /* Global */
 extern User *user_head;
@@ -51,7 +57,11 @@ extern Game *game_head;
 /* prototypes from game.c */
 int who_move(Game *);
 Game *find_game(char *, char *);
-Game *create_game(char *, char *, int limit);
+Game *create_game(char *, char *, int);
+void delete_game(Game *);
+int add_observer(Game *, User *);
+char *print_games();
+void delete_observer(Game *, User *);
 int move(char *, Game *);
 char *print_board(Game *);
 int isWin(Game *);
