@@ -8,6 +8,10 @@ typedef struct game_block {
     int board[3][3]; /* 0 is none, 1 is white, 2 is black */ 
     char* black; /* username of black */
     char* white; /* username of white */
+    time_t last_time_white; // Last track time of white
+    time_t last_time_black; // Last track time of black
+    time_t time_left_white; // Time limit left for white
+    time_t time_left_black; // Time limit left for black
     struct game_block *next;
 } Game;
  
@@ -45,8 +49,9 @@ extern Game *game_head;
 
 
 /* prototypes from game.c */
+int who_move(Game *);
 Game *find_game(char *, char *);
-Game *create_game(char *, char *);
+Game *create_game(char *, char *, int limit);
 int move(char *, Game *);
 char *print_board(Game *);
 
@@ -54,11 +59,11 @@ char *print_board(Game *);
 /* prototypes from myserver.c */
 
 /* prototypes from mycommands.c */
-char *help_command();
+char *help_command(void);
 
 /* prototypes from messages.c */
-char *initial_messsage();
-char *welcome_message();
-char *login_failed_message();
+char *initial_messsage(void);
+char *welcome_message(void);
+char *login_failed_message(void);
 
 #endif
