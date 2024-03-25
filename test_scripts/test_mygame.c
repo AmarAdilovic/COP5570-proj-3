@@ -4,7 +4,7 @@ Game *game_head = NULL;
 
 int main(int argc, char * argv[]) {
     char buffer[10];
-    Game *test_game = create_game("hello", "dmm");
+    Game *test_game = create_game("hello", "dmm", 600);
     while (isWin(test_game) == 0) {
         printf("%s\n", print_board(test_game));
         printf("Enter next move: \n");

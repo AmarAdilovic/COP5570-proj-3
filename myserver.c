@@ -106,7 +106,7 @@ User *find_user(char *username) {
 	// pointer to head
     User *ptr = user_head;
 	while (ptr != NULL) {
-		if (strcmp(ptr->username, username))
+		if (strcmp(ptr->username, username) == 0)
 			return ptr;
 		ptr = ptr->next;
 	}
