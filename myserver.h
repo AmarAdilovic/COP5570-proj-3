@@ -54,6 +54,7 @@ Game *find_game(char *, char *);
 Game *create_game(char *, char *, int limit);
 int move(char *, Game *);
 char *print_board(Game *);
+int isWin(Game *);
 
 
 /* prototypes from myserver.c */

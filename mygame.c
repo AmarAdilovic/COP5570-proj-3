@@ -20,7 +20,7 @@ Game *find_game(char *user1, char *user2) {
     Game *ptr = game_head;
     // Find the game
     while (ptr != NULL) {
-        if ((strcmp(ptr->black, user1) && strcmp(ptr->white, user2)) || (strcmp(ptr->black, user2) && strcmp(ptr->white, user1)))
+        if ((strcmp(ptr->black, user1) == 0 && strcmp(ptr->white, user2)) == 0 || (strcmp(ptr->black, user2) == 0 && strcmp(ptr->white, user1) == 0))
             return ptr;
         ptr = ptr->next;
     }   
