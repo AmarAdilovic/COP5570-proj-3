@@ -34,7 +34,29 @@ char *welcome_message() {
 char *login_failed_message() {
     return (
 	"Login failed!!\n"
+	);
+}
+
+// when the connection is closed
+char *connection_closed_message() {
+    return (
 	"Thank you for using Online Tic-tac-toe Server.\n"
 	"See you next time.\n"
+	);
+}
+
+// when the user successfully logs in as a guest
+char *guest_user_message() {
+    return (
+	"You login as a guest. The only command that you can use is\n"
+	"'register username password'\n\n"
+	);
+}
+
+// when a guest user enters a command that isn't the register command (they can also exit/quit)
+char *guest_user_warning_message() {
+    return (
+	"You are not supposed to do this.\n"
+	" You can only use 'register username password' as a guest.\n"
 	);
 }

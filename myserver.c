@@ -49,11 +49,11 @@ char* extractString(const char* input) {
 }
 
 /*
-User *create_user(char *username, char *password): create a new user with given username and password
-as argument and return the address pointer to the new user struct
+User *create_user(char *username): create a new user with the given username
+as an argument and return the address pointer to the new user struct
 */
 
-User *create_user(char *username, char *password) {
+User *create_user(char *username, int client_fd) {
     // pointer to pointer of head
     User **ptr_ptr = &user_head;
     // pointer to head
@@ -72,17 +72,10 @@ User *create_user(char *username, char *password) {
         return NULL;
     }
 
-    // set username and password
+    // set username
     ptr->username = strdup(username);
     if (ptr->username == NULL) {
-        fprintf(stderr, "Out of memory when using create_user function\n");
-        free(ptr);
-        return NULL;
-    }
-
-    ptr->password = strdup(password);
-    if (ptr->password == NULL) {
-        fprintf(stderr, "Out of memory when using create_user function\n");
+        fprintf(stderr, "Out of memory in the create_user function during username setup\n");
         free(ptr);
         return NULL;
     }
@@ -91,7 +84,7 @@ User *create_user(char *username, char *password) {
 	ptr->win_match = 0;
 	ptr->loss_match = 0;
 	ptr->status = 0;
-	ptr->client_fd = -1;
+	ptr->client_fd = client_fd;
 	ptr->message_num = 0; 
     ptr->next = NULL;
     *ptr_ptr = ptr; /* This can help handle NULL(empty linked list) case */
@@ -99,10 +92,10 @@ User *create_user(char *username, char *password) {
 }
 
 /*
-User *find_user(char *username): find the existing user using the given name as argument and return 
+User *find_user_with_name(char *username): find the existing user using the given name as argument and return 
 the pointer to the user object. return NULL if not found
 */
-User *find_user(char *username) {
+User *find_user_with_name(char *username) {
 	// pointer to head
     User *ptr = user_head;
 	while (ptr != NULL) {
@@ -111,7 +104,52 @@ User *find_user(char *username) {
 		ptr = ptr->next;
 	}
 	return NULL;
+}
 
+/*
+User *find_user_with_fd(int client_fd): find the existing user using the client file descriptor as argument and return 
+the pointer to the user object. return NULL if not found
+*/
+User *find_user_with_fd(int client_fd) {
+	// pointer to head
+    User *ptr = user_head;
+	while (ptr != NULL) {
+		if (ptr->client_fd == client_fd)
+			return ptr;
+		ptr = ptr->next;
+	}
+	return NULL;
+}
+
+// writes a given string to the given client file descriptor
+void write_message(int client_fd, char *message) {
+    write(client_fd, message, strlen(message) + 1);
+}
+
+// this writes the default "<USERNAME: MESSAGE_NUMBER> " pre-prended to every logged-in user prompt
+void write_user_message_format(User *user, int client_fd) {
+	// Estimate the size needed for the formatted string
+    // username can only be 100 (size of buffer)
+    // +4 for ": " and the angle brackets, +7 for the integer (1 million messages for a given user),
+    // and +1 for the null terminator.
+    int bufferSize = 100 + 4 + 6 + 1;
+    char* message = (char*)malloc(bufferSize);
+
+    if (message == NULL) {
+        printf("Failed to allocate memory.\n");
+        return;
+    }
+
+    // sprintf to write the formatted message to the allocated buffer
+    sprintf(message, "<%s: %d> ", user->username, user->message_num);
+
+    write_message(client_fd, message);
+
+    // free the allocated memory
+    free(message);
+
+	// increment the message number
+	user->message_num = user->message_num + 1;
 }
 
 void sig_chld(int signo)
@@ -132,7 +170,6 @@ int main(int argc, char * argv[])
 	struct sockaddr_in addr, recaddr;
 	struct sigaction abc;
 	int client[MAXCONN];
-	// User *users;
 	char buf[100];
 	fd_set allset, rset;	
 	int maxfd;
@@ -239,21 +276,80 @@ int main(int argc, char * argv[])
 					FD_CLR(client[i], &allset);
 					client[i] = -1;
 				} else {
-					// command has been written, need to evaluate it now
+					// command has been written, will need to evaluate it
 					char *extractedBuf = extractString(buf);
-					if (strcmp(extractedBuf, "help") == 0 || strcmp(extractedBuf, "?") == 0) {
-						write(client[i], help_command(), strlen(help_command()) + 1);
+					User *found_user = find_user_with_fd(client[i]);
+					// User not found, need to create a new user or log into an existing account
+					if (found_user == NULL) {
+						// if the user logs in as a guest
+						if (strcmp(extractedBuf, "guest") == 0) {
+							User *created_guest = create_user((char *)"guest", client[i]);
+							// want a new line before displaying the help menu
+							write_message(client[i], (char *)"\n");
+							// display the help command
+							write_message(client[i], help_command());
+							// display the guest user introductory message
+							write_message(client[i], guest_user_message());
+							write_user_message_format(created_guest, client[i]);
+						}
+						// the user enters a username
+						else {
+							User *found_user_by_name = find_user_with_name(extractedBuf);
+							// if no user is found, we need to create one
+							if (found_user_by_name == NULL) {
+								create_user(extractedBuf, client[i]);
+							}
+							// if a user is found, the account already exists 
+							// - we need to change the client_fd and status variables so that we can follow the logged-in user workflow
+							else {
+								// TODO: implement
+								// status = 2
+								// client_fd = client[i]
+							}
+						}
 					}
-					else if (strcmp(extractedBuf, "exit") == 0 || strcmp(extractedBuf, "quit") == 0) {
-						// TODO: From the client-side this seems correct (the same behavior as the example server)
-						// but will need to track which user logged out
-						close(client[i]);
-						FD_CLR(client[i], &allset);
-						client[i] = -1;
-					}
+					// if the user is logged in
 					else {
-						// TODO: This should be a catch-all for unknown commands, for now echo the command back to the client
-						write(client[i], buf, num);
+						// if the logged in user is a guest, we now should only listen to the register, quit, and exit commands
+						if (strcmp(found_user->username, "guest") == 0) {
+							// if the first word is "register"
+							if (strcmp(extractedBuf, "register") == 0) {
+								// TODO: implement the register command
+								// TODO: Handle case when the username registered already exists
+								write_message(client[i], (char *)"register");
+							}
+							else if (strcmp(extractedBuf, "exit") == 0 || strcmp(extractedBuf, "quit") == 0) {
+								// TODO: From the client-side this seems correct (the same behavior as the example server)
+								// but will need to track which user logged out
+								write_message(client[i], connection_closed_message());
+								close(client[i]);
+								FD_CLR(client[i], &allset);
+								client[i] = -1;
+							}
+							// the user needs to either enter the register command or exit
+							else {
+								write_message(client[i], guest_user_warning_message());
+							}
+						}
+						// the logged in user is not a guest,
+						// we need to verify they have a valid password
+						// we need to listen to all commands
+						else {
+							if (strcmp(extractedBuf, "help") == 0 || strcmp(extractedBuf, "?") == 0) {
+								write_message(client[i], help_command());
+							}
+							else if (strcmp(extractedBuf, "exit") == 0 || strcmp(extractedBuf, "quit") == 0) {
+								// TODO: From the client-side this seems correct (the same behavior as the example server)
+								// but will need to track which user logged out
+								close(client[i]);
+								FD_CLR(client[i], &allset);
+								client[i] = -1;
+							}
+							else {
+								// TODO: This should be a catch-all for unknown commands, for now echo the command back to the client
+								write(client[i], buf, num);
+							}
+						}
 					}
 				}
 			}
