@@ -30,11 +30,11 @@ typedef struct mail_block {
 typedef struct user_block {
     char *username; 
     char *password;
+    int client_fd;
     int win_match; /* number of win matchs */
     int loss_match; /* number of loss matchs */
     int draw_match; /* number of draw matchs */
-    int status; /* 0 is offline, 1 is online */
-    int client_fd; /* -1 if the user is offline */
+    int status; /* 0 is offline, 1 is online, 2 is waiting on password */
     Blocked_users* block_head; /* head of linked list of block users */
     Mail* mail_head; /* head of linked list of mails to user */
     struct user_block *next;
@@ -61,10 +61,14 @@ int isWin(Game *);
 
 /* prototypes from mycommands.c */
 char *help_command(void);
+void change_password_command(User *, char *);
 
 /* prototypes from messages.c */
 char *initial_messsage(void);
 char *welcome_message(void);
 char *login_failed_message(void);
+char *connection_closed_message(void);
+char *guest_user_message(void);
+char *guest_user_warning_message(void);
 
 #endif

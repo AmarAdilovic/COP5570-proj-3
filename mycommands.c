@@ -5,6 +5,10 @@ also called by the server in certain senarios (such as on user login)
 */
 
 #include "myserver.h"
+// for stdup
+#include <string.h>
+// for free
+#include <stdlib.h>
 
 // this returns the help menu which lists the commands available to the user
 char *help_command() {
@@ -43,3 +47,12 @@ char *help_command() {
     return RETURNED_STRING;
 }
 
+// this changes the password for a given user
+void change_password_command(User *user, char *new_password) {
+    user->password = strdup(new_password);
+    if (user->username == NULL) {
+        fprintf(stderr, "Out of memory when trying to change the password, deleting user.\n");
+        free(user);
+        return;
+    }
+}
