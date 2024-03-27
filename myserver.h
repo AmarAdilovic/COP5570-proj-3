@@ -14,6 +14,7 @@ typedef struct mail_block {
     int *status; /* 0 for not read, 1 for read */
     int *title; /* title of the mail */
     int *message; /* message inside mail */
+    struct mail_block *next;
 } Mail;
 
 typedef struct user_block {
@@ -26,8 +27,8 @@ typedef struct user_block {
     int status; /* 0 is offline, 1 is online, 2 is waiting on password */
     Blocked_user* block_head; /* head of linked list of block users */
     Mail* mail_head; /* head of linked list of mails to user */
-    struct user_block *next;
     int message_num; /* count the current message number */
+    struct user_block *next;
 } User;
 
 typedef struct observer_block {

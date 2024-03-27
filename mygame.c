@@ -432,9 +432,9 @@ char *print_board(Game *ptr) {
             if (ptr->board[i][j] == 0)
                 ret_val[count] = '.';
             else if (ptr->board[i][j] == 1)
-                ret_val[count] = 'w';
+                ret_val[count] = 'O';
             else
-                ret_val[count] = 'b';
+                ret_val[count] = '#';
 
             if (j != 2) 
                 count += 3;
