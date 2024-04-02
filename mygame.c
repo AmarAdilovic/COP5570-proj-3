@@ -435,7 +435,7 @@ char *print_board(Game *ptr) {
                 ret_val[count] = 'O';
             else
                 ret_val[count] = '#';
-
+ 
             if (j != 2) 
                 count += 3;
             else 

@@ -28,7 +28,7 @@ void serialize_block(FILE *file, Blocked_user *cur) {
 /*
 void serialize_mail(FILE *file, Mail *cur): save mail to given file
 ${mails}$
-mails: ^(name, status, **(title)**, **(message)**)^, 
+mails: ^(name, status, **(title)**, **(message)**)^,  
 */
 void serialize_mail(FILE *file, Mail *cur) {
     fprintf(file, "${");
@@ -64,19 +64,25 @@ void serialize(char *file_name) {
 
     for (cur; cur != NULL; cur = cur->next) {
         // open object and save username
-        fprintf(file, "$(%s, ", cur->username);
+        fprintf(file, "$(%s; ", cur->username);
         // save password
-        fprintf(file, "%s, ", cur->password);
+        fprintf(file, "%s; ", cur->password);
+        // save info
+        fprintf(file, "%s; ", cur->info);
         // save win_match
-        fprintf(file, "%d, ", cur->win_match);
+        fprintf(file, "%d; ", cur->win_match);
         // save loss_match
-        fprintf(file, "%d, ", cur->loss_match);
+        fprintf(file, "%d; ", cur->loss_match);
         // save draw_match
-        fprintf(file, "%d, ", cur->draw_match);
+        fprintf(file, "%d; ", cur->draw_match);
+
+        /* TODO: do later
         // save block_user
         serialize_block(file, cur->block_head);
         // save mail
         serialize_mail(file, cur->mail_head);
+        */
+
         // close linked_list object
         fprintf(file, ")$, ");
     }
@@ -89,7 +95,7 @@ name as argument
 WARNING: this will try to override user_head, use that only when user_head is empty
 */
 void deserialize(char *file_name) {
-    char *name, *pwd, *users, *mails;
+    char *name, *pwd, *info;
     int win_match, loss_match, draw_match;
     // pointer to pointer of head
     User **ptr_ptr = &user_head;
@@ -102,7 +108,7 @@ void deserialize(char *file_name) {
         exit(2);
     }
 
-    while(fscanf(file, "$(%s, %s, %d, %d, %d,  ${%s}$, ${%s}$)$", &name, &pwd, &win_match, &loss_match, &draw_match, &mails) > 0) {
+    while(fscanf(file, "$(%49[^;]; %49[^;]; %49[^;]; %d; %d; %d", &name, &pwd, &info, &win_match, &loss_match, &draw_match) > 0) {
         // allocate memory for new user
         ptr = malloc(sizeof(User));
         if (ptr == NULL) {
@@ -120,19 +126,31 @@ void deserialize(char *file_name) {
         
         // set password
         ptr->password = strdup(pwd);
-        if (ptr->username == NULL) {
-            fprintf(stderr, "Out of memory in the deserialize function during username setup\n");
+        if (ptr->password == NULL) {
+            fprintf(stderr, "Out of memory in the deserialize function during password setup\n");
             free(ptr);
             return NULL;
         }
 
-        // 
+        // set info
+        ptr->info = strdup(info);
+        if (ptr->info == NULL) {
+            fprintf(stderr, "Out of memory in the deserialize function during info setup\n");
+            free(ptr);
+            return NULL;
+        }
+
+        // set win match
+        ptr->win_match = win_match;
+        // set loss match
+        ptr->loss_match = loss_match;
+        // set draw match
+        ptr->draw_match = draw_match;
 
         // set it to the memory
         ptr_ptr = &ptr;
         ptr->next = NULL;
         ptr_ptr = &(ptr->next);
-
 
     }
 
