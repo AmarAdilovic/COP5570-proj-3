@@ -9,6 +9,8 @@ and should be called from myserver.c every 5 minutes using alarm
 #include <string.h>
 #include "myserver.h"
 
+
+
 /*
 void serialize_block(FILE *file, Blocked_user *cur): save block users to given file
 ${block_users}$
@@ -26,7 +28,7 @@ void serialize_block(FILE *file, Blocked_user *cur) {
 /*
 void serialize_mail(FILE *file, Mail *cur): save mail to given file
 ${mails}$
-mails: ^(name, status, title, message)^,  
+mails: ^(name, status, **(title)**, **(message)**)^, 
 */
 void serialize_mail(FILE *file, Mail *cur) {
     fprintf(file, "${");
@@ -46,15 +48,15 @@ void serialize_mail(FILE *file, Mail *cur) {
 /*
 void serialize(): save the accounts information to a file given the file name as argument
 Format to save account information to file:
-Users: $(name, pwd, win_match, loss_match, draw_match,  ${block_users}$, ${mails}$)$, 
+Users: $(name, pwd, ${info}$, win_match, loss_match, draw_match,  ${block_users}$, ${mails}$,)$, 
 Block_users: name, 
-mails: ^(name, status, title, message)^, 
+mails: ^(name, status, **(title)**, **(message)**)^, 
 TODO: call this function from myserver.c every 5 minutes
 */
 void serialize(char *file_name) {
     User *cur = user_head;
 
-    // Save acoount information to accounts.txt file
+    // Save acoount information to file_name file
     FILE* file = fopen(file_name, "w");
     if (file == NULL) {
         exit(1);
@@ -79,5 +81,60 @@ void serialize(char *file_name) {
         fprintf(file, ")$, ");
     }
     fclose(file);
+}
+
+/*
+void deserialize(char *file_name): It will retrieve information from the file given the file
+name as argument
+WARNING: this will try to override user_head, use that only when user_head is empty
+*/
+void deserialize(char *file_name) {
+    char *name, *pwd, *users, *mails;
+    int win_match, loss_match, draw_match;
+    // pointer to pointer of head
+    User **ptr_ptr = &user_head;
+    // pointer to head
+    User *ptr = user_head;
+
+    // save account information to file_name file
+    FILE* file = fopen(file_name, "r");
+    if (file == NULL) {
+        exit(2);
+    }
+
+    while(fscanf(file, "$(%s, %s, %d, %d, %d,  ${%s}$, ${%s}$)$", &name, &pwd, &win_match, &loss_match, &draw_match, &mails) > 0) {
+        // allocate memory for new user
+        ptr = malloc(sizeof(User));
+        if (ptr == NULL) {
+            fprintf(stderr, "Out of memory when using create_user function\n");
+            return NULL;
+        }
+
+        // set username
+        ptr->username = strdup(name);
+        if (ptr->username == NULL) {
+            fprintf(stderr, "Out of memory in the deserialize function during username setup\n");
+            free(ptr);
+            return NULL;
+        }
+        
+        // set password
+        ptr->password = strdup(pwd);
+        if (ptr->username == NULL) {
+            fprintf(stderr, "Out of memory in the deserialize function during username setup\n");
+            free(ptr);
+            return NULL;
+        }
+
+        // 
+
+        // set it to the memory
+        ptr_ptr = &ptr;
+        ptr->next = NULL;
+        ptr_ptr = &(ptr->next);
+
+
+    }
+
 }
 
