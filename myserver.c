@@ -80,6 +80,7 @@ User *create_user(char *username, int client_fd) {
         return NULL;
     }
 
+	ptr->info = NULL;
 	ptr->draw_match = 0;
 	ptr->win_match = 0;
 	ptr->loss_match = 0;

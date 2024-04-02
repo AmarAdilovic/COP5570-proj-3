@@ -20,6 +20,7 @@ typedef struct mail_block {
 typedef struct user_block {
     char *username; 
     char *password;
+    char *info;
     int client_fd;
     int win_match; /* number of win matchs */
     int loss_match; /* number of loss matchs */
