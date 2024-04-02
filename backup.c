@@ -10,8 +10,48 @@ and should be called from myserver.c every 5 minutes using alarm
 #include "myserver.h"
 
 
+/*
+char *encrypt(char *str): encrypt string into ascii and return the pointer to ascii string
+*/
+char *encrypt(char *str) {
+    char *ret_val, *temp;
+    int i, len;
+    ret_val = (char*) malloc(3600*sizeof(char));
+    temp = (char*) malloc(10*sizeof(char));
+    len = strlen(str);
+    for (i = 0; i < len; i++) {
+        sprintf(temp, "%d|", str[len]);
+        if (i == len)
+            sprintf(temp, "%d", str[len]);
+        strcat(ret_val, temp);
+    }
+    free(temp);
+    return ret_val;
+}
 
 /*
+char *decrypt(char *str): decrypt the ascii string and return the pointer to original string
+*/
+char *decrypt(char *str) {
+    char *ret_val, *token, *temp;
+    int i, temp_int;
+    ret_val = (char*) malloc(1200*sizeof(char));
+    temp = (char*) malloc(10*sizeof(char));
+    token = strtok(str, "|");
+
+    while (token != NULL) {
+        temp_int = atoi(token);
+        sprintf(temp, "%c", temp_int);
+        strcat(ret_val, temp);
+    }
+    free(temp);
+    return ret_val;
+}
+
+
+
+/*
+TODO: Change this function if have time
 void serialize_block(FILE *file, Blocked_user *cur): save block users to given file
 ${block_users}$
 Block_users: name, 
@@ -26,6 +66,7 @@ void serialize_block(FILE *file, Blocked_user *cur) {
 }
 
 /*
+TODO: Change this function if have time
 void serialize_mail(FILE *file, Mail *cur): save mail to given file
 ${mails}$
 mails: ^(name, status, **(title)**, **(message)**)^,  
@@ -54,7 +95,13 @@ mails: ^(name, status, **(title)**, **(message)**)^,
 TODO: call this function from myserver.c every 5 minutes
 */
 void serialize(char *file_name) {
+    char *e_username, *e_pwd, *e_info;
     User *cur = user_head;
+
+    // encrypt info
+    e_username = encrypt(cur->username);
+    e_pwd = encrypt(cur->password);
+    e_info = encrypt(cur->info);
 
     // Save acoount information to file_name file
     FILE* file = fopen(file_name, "w");
@@ -64,17 +111,17 @@ void serialize(char *file_name) {
 
     for (cur; cur != NULL; cur = cur->next) {
         // open object and save username
-        fprintf(file, "$(%s; ", cur->username);
+        fprintf(file, "%s ", e_username);
         // save password
-        fprintf(file, "%s; ", cur->password);
+        fprintf(file, "%s ", e_pwd);
         // save info
-        fprintf(file, "%s; ", cur->info);
+        fprintf(file, "%s ", e_info);
         // save win_match
-        fprintf(file, "%d; ", cur->win_match);
+        fprintf(file, "%d ", cur->win_match);
         // save loss_match
-        fprintf(file, "%d; ", cur->loss_match);
+        fprintf(file, "%d ", cur->loss_match);
         // save draw_match
-        fprintf(file, "%d; ", cur->draw_match);
+        fprintf(file, "%d ", cur->draw_match);
 
         /* TODO: do later
         // save block_user
@@ -83,8 +130,10 @@ void serialize(char *file_name) {
         serialize_mail(file, cur->mail_head);
         */
 
-        // close linked_list object
-        fprintf(file, ")$, ");
+        // free encrypted string
+        free(e_username);
+        free(e_pwd);
+        free(e_info);
     }
     fclose(file);
 }
@@ -108,7 +157,7 @@ void deserialize(char *file_name) {
         exit(2);
     }
 
-    while(fscanf(file, "$(%49[^;]; %49[^;]; %49[^;]; %d; %d; %d", &name, &pwd, &info, &win_match, &loss_match, &draw_match) > 0) {
+    while(fscanf(file, "%s %s %s %d %d %d", &name, &pwd, &info, &win_match, &loss_match, &draw_match) > 0) {
         // allocate memory for new user
         ptr = malloc(sizeof(User));
         if (ptr == NULL) {
@@ -117,28 +166,13 @@ void deserialize(char *file_name) {
         }
 
         // set username
-        ptr->username = strdup(name);
-        if (ptr->username == NULL) {
-            fprintf(stderr, "Out of memory in the deserialize function during username setup\n");
-            free(ptr);
-            return NULL;
-        }
+        ptr->username = decrypt(name);
         
         // set password
-        ptr->password = strdup(pwd);
-        if (ptr->password == NULL) {
-            fprintf(stderr, "Out of memory in the deserialize function during password setup\n");
-            free(ptr);
-            return NULL;
-        }
+        ptr->password = decrypt(pwd);
 
         // set info
-        ptr->info = strdup(info);
-        if (ptr->info == NULL) {
-            fprintf(stderr, "Out of memory in the deserialize function during info setup\n");
-            free(ptr);
-            return NULL;
-        }
+        ptr->info = decrypt(info);
 
         // set win match
         ptr->win_match = win_match;
