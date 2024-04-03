@@ -22,7 +22,8 @@ typedef struct mail_block {
     char *username; /* name of sender */
     int status; /* 0 for not read, 1 for read */
     char *title; /* title of the mail */
-    int message; /* message inside mail */
+    char* message; /* message inside mail */
+    time_t date; /* send date */
     struct mail_block *next;
 } Mail;
 
