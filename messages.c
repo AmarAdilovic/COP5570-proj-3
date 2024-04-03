@@ -62,21 +62,10 @@ char *guest_user_warning_message() {
 }
 
 
-// <amar: 14> register newuser test test
-// Please use a guest login to register new users.
-
 // <amar: 0> exit
 // You are not in the room.
 // <amar: 1> Thank you for using Online Tic-tac-toe Server.
 // See you next time.
 
-// can just press enter forever
-
 // when logging out
 // <amar: 3> You are not in the room.
-
-// <amar: 4> You login from another place.
-// Thank you for using Online Tic-tac-toe Server.
-// See you next time.
-
-// Connection closed by foreign host.

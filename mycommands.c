@@ -17,7 +17,7 @@ char *help_command() {
     char* RETURNED_STRING = 
     "\nCommands supported:\n"
     "  #who                     # List all online users\n"
-    "  #stats [name]            # Display user information\n"
+    "  stats [name]            # Display user information\n"
     "  #game                    # list all current games\n"
     "  #observe <game_num>      # Observe a game\n"
     "  #unobserve               # Unobserve a game\n"
@@ -74,10 +74,83 @@ void register_command(int client_fd, TempUser *temp_user, char *username, char *
 
         // free the allocated memory
         free(message);
-
     }
 }
 
+// this registers a given user
+void stats_command(int client_fd, char *username) {
+    User *found_user_by_name = find_user_with_name(username);
+    // no user is found
+    if (found_user_by_name == NULL) {
+        // username can only be 100 (size of buffer)
+        char* message = (char*)malloc(100 + 30);
+
+        if (message == NULL) {
+            printf("Failed to allocate memory.\n");
+            return;
+        }
+
+        // sprintf to write the formatted message to the allocated buffer
+        sprintf(message, "User %s does not exist.\n", username);
+
+        write_message(client_fd, message);
+        free(message);
+    }
+    // if an existing user is found
+    else {
+        // username can be 100 (we call it twice)
+        // info can be x
+        // quiet value can be 3
+        // 200 for the constant text (over-allocating)
+        char* message = (char*)malloc(100 + 100 + 3 + 200);
+
+        if (message == NULL) {
+            printf("Failed to allocate memory.\n");
+            return;
+        }
+
+        const char* info_message = (strcmp(found_user_by_name->info, "") == 0) ? "<none>" : found_user_by_name->info;
+        const char* status_message = (found_user_by_name->status == 1) ? "currently online" : "off-line";
+        const float rating = (found_user_by_name->win_match * 0.2) + (found_user_by_name->draw_match * 0.1);
+        const char* quiet_message = (found_user_by_name->quiet == 0) ? "No" : "Yes";
+        // TODO: Implement Blocked users after "who" command
+        const char* blocked_user_message = (NULL == NULL) ? "<none>" : "Yes";
+
+        // sprintf to write the formatted message to the allocated buffer
+        sprintf(
+            message,
+            "User: %s\n"
+            "Info: %s\n"
+            "Rating: %f\n"
+            "Wins: %d, Loses: %d\n"
+            "Quiet: %s\n"
+            "Blocked users: %s\n\n"
+            "%s is %s.\n",
+            username,
+            info_message,
+            rating,
+            found_user_by_name->win_match,
+            found_user_by_name->loss_match,
+            quiet_message,
+            blocked_user_message,
+            username,
+            status_message
+            );
+
+        write_message(client_fd, message);
+    }
+}
+
+// this changes the info for a given user
+void info_command(User *user, char** user_inputs, int num_words) {
+    char* combined = combineUserInputs(user_inputs, num_words);
+    user->info = strdup(combined);
+
+    if (user->info == NULL) {
+        fprintf(stderr, "Out of memory when trying to change the password.\n");
+        return;
+    }
+}
 
 // this changes the password for a given user
 void change_password_command(User *user, char *new_password) {

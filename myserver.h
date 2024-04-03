@@ -38,11 +38,13 @@ typedef struct user_block {
     /*
     0 is offline,
     1 is online (they have an active connection to the server),
-    2 is waiting of password but there is an active connection from this account,
-    3 is waiting on password,
-    4 is waiting on password but user not found
     */
     int status;
+    /*
+    0 is nonquiet (default value),
+    1 is quiet mode,
+    */
+    int quiet;
     Blocked_user* block_head; /* head of linked list of block users */
     Mail* mail_head; /* head of linked list of mails to user */
     int message_num; /* count the current message number */
@@ -108,11 +110,14 @@ User *create_user(char *, int);
 User *find_user_with_name(char *);
 void write_message(int, char *);
 void write_temp_user_message_format(TempUser *, int);
+char* combineUserInputs(char**, int);
 
 /* prototypes from mycommands.c */
 char *help_command(void);
 void register_command(int, TempUser *, char *, char *);
 void change_password_command(User *, char *);
+void stats_command(int, char *);
+void info_command(User *, char**, int);
 
 /* prototypes from messages.c */
 char *initial_messsage(void);

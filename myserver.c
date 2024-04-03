@@ -24,7 +24,7 @@ char** extractStrings(const char* input, int* count) {
     // Count the number of words to determine the size of the array of strings
     int words = 1;
     for (int i = 0; input[i] != '\0'; i++) {
-        if (input[i] == ' ') {
+        if (input[i] == ' ' || input[i] == '\t') {
 			words++;
         }
     }
@@ -41,21 +41,22 @@ char** extractStrings(const char* input, int* count) {
     const char* wordStart = input; // Start of the current word
 
     for (int i = 0; ; i++) {
-        // If space or null terminator is encountered, copy the current word
-        if (input[i] == ' ' || input[i] == '\0') {
+        // If space, null terminator, or tab is encountered, copy the current word
+        if (input[i] == ' ' || input[i] == '\t' || input[i] == '\0') {
             int wordLength = input + i - wordStart;
-            result[wordIndex] = (char*)malloc(wordLength + 1); // +1 for the null terminator
+			// +1 for the null terminator
+            result[wordIndex] = (char*)malloc(wordLength + 1);
             if (result[wordIndex] == NULL) {
                 printf("Memory allocation for string failed\n");
                 // Free previously allocated strings
                 while (--wordIndex >= 0) {
                     free(result[wordIndex]);
                 }
-                free(result); // Free the array itself
+                free(result);
                 return NULL;
             }
             strncpy(result[wordIndex], wordStart, wordLength);
-            result[wordIndex][wordLength] = '\0'; // Null-terminate the string
+            result[wordIndex][wordLength] = '\0';
             wordIndex++;
 
             if (input[i] == '\0') {
@@ -76,7 +77,7 @@ char* extractString(const char* input) {
 	int length = 0;
 	for (int i = 0; input[i] != '\0'; ++i) {
 		unsigned char ch = input[i]; // Use unsigned char to handle characters correctly
-		if (ch >= 32 && ch <= 126) {
+		if ((ch >= 32 && ch <= 126) || ch == 9) {
 			length++;
 		} else {
 			break;
@@ -96,6 +97,36 @@ char* extractString(const char* input) {
 
     return result;
 }
+
+char* combineUserInputs(char** userInputs, int numWords) {
+    if (numWords == 0 || numWords == 1) {
+        return "";
+    }
+
+    // Calculate the total length needed for the combined string
+    size_t totalLength = 0;
+    for (int i = 1; i < numWords; i++) {
+		// +1 = add null terminator
+        totalLength += strlen(userInputs[i]) + 1;
+    }
+
+    char* combined = malloc(totalLength);
+    if (combined == NULL) {
+        printf("Memory allocation failed\n");
+        return NULL;
+    }
+
+    strcpy(combined, userInputs[1]);
+
+    // Append the rest of the strings, delimited by spaces
+    for (int i = 2; i < numWords; i++) {
+        strcat(combined, " ");
+        strcat(combined, userInputs[i]);
+    }
+
+    return combined;
+}
+
 
 char* trimSpaces(const char* input) {
     if (input == NULL) {
@@ -164,11 +195,13 @@ User *create_user(char *username, int client_fd) {
         return NULL;
     }
 
-	ptr->info = NULL;
+	// we initialize info to an empty string for easier evaluation later
+	ptr->info = "";
 	ptr->draw_match = 0;
 	ptr->win_match = 0;
 	ptr->loss_match = 0;
 	ptr->status = USER_OFFLINE_STATUS;
+	ptr->quiet = 0;
 	ptr->client_fd = client_fd;
 	ptr->message_num = 0; 
     ptr->next = NULL;
@@ -500,7 +533,7 @@ int main(int argc, char * argv[])
 			if (FD_ISSET(client[i], &rset)) {
 				int num;
 				num = read(client[i], buf, 100);
-				printf("reading from = %d\n", client[i]);
+				printf("reading from = %d with buf=%s\n", client[i], buf);
 				if (num == 0) {
 					/* client exits */
 					client[i] = close_client_connection(client[i], &allset);;
@@ -511,6 +544,7 @@ int main(int argc, char * argv[])
 					int numWords = 0;
     				char** userInputs = extractStrings(trimmedString, &numWords);
 					char *userInput = userInputs[0];
+					printf("extractedBuf = %s trimmedString = %s numWords = %d\n", extractedBuf, trimmedString, numWords);
 
 					User *found_user = find_user_with_fd(client[i]);
 					TempUser *found_temp_user = find_temp_user_with_fd(client[i]);
@@ -592,7 +626,6 @@ int main(int argc, char * argv[])
 								else {
 									register_command(client[i], found_temp_user, userInputs[1], userInputs[2]);
 								}
-								
 							}
 							else if (strcmp(userInput, "exit") == 0 || strcmp(userInput, "quit") == 0) {
 								client[i] = close_client_connection(client[i], &allset);
@@ -661,6 +694,30 @@ int main(int argc, char * argv[])
 							write_message(client[i], "Password changed.\n");
 							write_user_message_format(found_user, client[i]);
 						}
+						else if (strcmp(userInput, "stats") == 0) {
+							// if the user only enters "stats"
+							// treated as "stats CURR_USER_NAME"
+							if (numWords == 1) {
+								stats_command(client[i], found_user->username);
+							}
+							// if the user enters "stats USER_NAME", where anything after USER_NAME is ignored
+							else {
+								stats_command(client[i], userInputs[1]);
+							}
+							write_user_message_format(found_user, client[i]);
+						}
+						else if (strcmp(userInput, "info") == 0) {
+							// if the user only enters "info"
+							if (numWords == 1) {
+								info_command(found_user, (char **)"", 0);
+							}
+							// if the user enters "info ANY STRING"
+							else {
+								info_command(found_user, userInputs, numWords);
+							}
+							write_message(client[i], "Info changed.\n");
+							write_user_message_format(found_user, client[i]);
+						}
 						else if (strcmp(userInput, "exit") == 0 || strcmp(userInput, "quit") == 0) {
 							client[i] = close_user_connection(found_user, client[i], &allset);
 						}
@@ -692,6 +749,8 @@ int main(int argc, char * argv[])
 					// Free the array of strings
 					free(userInputs); 
 				}
+				// clear the buf
+				memset(buf, 0, sizeof(buf));
 			}
 		}
 	}
