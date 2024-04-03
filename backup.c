@@ -94,7 +94,7 @@ void serialize_mail(FILE *file, Mail *cur) {
         // save mail title
         fprintf(file, "%s, ", cur->title);
         // save mail message
-        fprintf(file, "%d)^, ", cur->message);
+        fprintf(file, "%s)^, ", cur->message);
     }
     fprintf(file, "}$");
 }

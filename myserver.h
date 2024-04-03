@@ -126,5 +126,11 @@ char *guest_user_warning_message(void);
 void serialize(char *);
 void deserialize(char *);
 
+/* prototypes from mymail.c */
+char *listmail(char *);
+char *readmail(char *, int);
+char *deletemail(char *, int);
+int createmail(char *, char *, char *, char *);
+
 
 #endif
