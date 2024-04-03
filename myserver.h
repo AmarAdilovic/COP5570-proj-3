@@ -27,6 +27,14 @@ typedef struct mail_block {
     struct mail_block *next;
 } Mail;
 
+typedef struct temp_mail_block {
+    char *to;
+    char *from;
+    char *title;
+    char *message;
+    struct temp_mail_block *next;
+} TempMail;
+
 typedef struct user_block {
     char *username; 
     char *password;
@@ -86,6 +94,7 @@ typedef struct game_block {
 extern User *user_head;
 extern Game *game_head;
 extern TempUser *temp_user_head;
+extern TempMail *temp_mail_head;
 
 /* Flag related */
 
