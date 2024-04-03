@@ -24,12 +24,10 @@ char *encrypt(char *str) {
     temp = (char*) malloc(10*sizeof(char));
     len = strlen(str);
     for (i = 0; i < len; i++) {
-        if (i == len)
+        if (i == len - 1)
             sprintf(temp, "%d", str[i]);
         else 
             sprintf(temp, "%d|", str[i]);
-        printf("temp: %s\n", temp);
-        printf("ret_val: %s\n", ret_val);
         if (i == 0)
             sprintf(ret_val, temp);
         else
@@ -47,14 +45,13 @@ char *decrypt(char *str) {
     int temp_int;
     ret_val = (char*) malloc(1200*sizeof(char));
     if (strcmp("NULL", str) == 0) {
-        sprintf(ret_val, "");
-        return ret_val;
+        free(ret_val);
+        return NULL;
     }
     temp = (char*) malloc(10*sizeof(char));
     token = strtok(str, "|");
 
     while (token != NULL) {
-        printf("%s\n", token);
         temp_int = atoi(token);
         sprintf(temp, "%c", temp_int);
         strcat(ret_val, temp);
