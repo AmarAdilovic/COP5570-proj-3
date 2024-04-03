@@ -3,6 +3,15 @@
 #include <stdio.h>
 #include <time.h>
 
+// user statuses
+#define USER_OFFLINE_STATUS 0
+#define USER_ONLINE_STATUS 1
+
+#define TEMP_USER_GUEST_STATUS 1
+#define TEMP_USER_ACTIVE_CONNECTION_PENDING_STATUS 2
+#define TEMP_USER_WAITING_ON_PASSWORD_STATUS 3
+#define TEMP_USER_WAITING_PASSWORD_NOT_FOUND_STATUS 4
+
 /* Typedefs */
 typedef struct block_block {
     char *username;
@@ -25,12 +34,35 @@ typedef struct user_block {
     int win_match; /* number of win matchs */
     int loss_match; /* number of loss matchs */
     int draw_match; /* number of draw matchs */
-    int status; /* 0 is offline, 1 is online, 2 is waiting on password */
+    /*
+    0 is offline,
+    1 is online (they have an active connection to the server),
+    2 is waiting of password but there is an active connection from this account,
+    3 is waiting on password,
+    4 is waiting on password but user not found
+    */
+    int status;
     Blocked_user* block_head; /* head of linked list of block users */
     Mail* mail_head; /* head of linked list of mails to user */
     int message_num; /* count the current message number */
     struct user_block *next;
 } User;
+
+typedef struct temp_user_block {
+    char *username; 
+    char *password;
+    int client_fd;
+    /*
+    0 is the initial state
+    1 is a guest user
+    2 is waiting of password but there is an active connection on this account,
+    3 is waiting on password,
+    4 is waiting on password but user not found
+    */
+    int status;
+    int message_num; /* count the current message number */
+    struct temp_user_block *next;
+} TempUser;
 
 typedef struct observer_block {
     User *user; /* pointer to user currently observe */
@@ -52,6 +84,7 @@ typedef struct game_block {
 /* Global */
 extern User *user_head;
 extern Game *game_head;
+extern TempUser *temp_user_head;
 
 /* Flag related */
 
@@ -70,9 +103,13 @@ int isWin(Game *);
 
 
 /* prototypes from myserver.c */
+User *create_user(char *, int);
+User *find_user_with_name(char *);
+void write_message(int, char *);
 
 /* prototypes from mycommands.c */
 char *help_command(void);
+void register_command(int, char *, char *);
 void change_password_command(User *, char *);
 
 /* prototypes from messages.c */

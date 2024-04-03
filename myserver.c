@@ -17,7 +17,55 @@
 // Initialize nulls
 Game *game_head = NULL;
 User *user_head = NULL;
+TempUser *temp_user_head = NULL;
 
+char** extractStrings(const char* input, int* count) {
+    // Count the number of words to determine the size of the array of strings
+    int words = 1;
+    for (int i = 0; input[i] != '\0'; i++) {
+        if (input[i] == ' ') {
+            words++;
+        }
+    }
+
+    // Allocate memory for the array of strings
+    char** result = (char**)malloc(words * sizeof(char*));
+    if (result == NULL) {
+        printf("Memory allocation for array of strings failed\n");
+        return NULL;
+    }
+
+    *count = words; // Set the number of words
+    int wordIndex = 0; // Index for the current word
+    const char* wordStart = input; // Start of the current word
+
+    for (int i = 0; ; i++) {
+        // If space or null terminator is encountered, copy the current word
+        if (input[i] == ' ' || input[i] == '\0') {
+            int wordLength = input + i - wordStart;
+            result[wordIndex] = (char*)malloc(wordLength + 1); // +1 for the null terminator
+            if (result[wordIndex] == NULL) {
+                printf("Memory allocation for string failed\n");
+                // Free previously allocated strings
+                while (--wordIndex >= 0) {
+                    free(result[wordIndex]);
+                }
+                free(result); // Free the array itself
+                return NULL;
+            }
+            strncpy(result[wordIndex], wordStart, wordLength);
+            result[wordIndex][wordLength] = '\0'; // Null-terminate the string
+            wordIndex++;
+
+            if (input[i] == '\0') {
+                break; // Exit if end of the input string
+            }
+            wordStart = input + i + 1; // Move to the start of the next word
+        }
+    }
+
+    return result;
+}
 
 // the buf will usually have a carriage return and new line appended to the end,
 // however, sometimes it may have an undefined number of new lines, carriage returns, or other characters
@@ -84,6 +132,46 @@ User *create_user(char *username, int client_fd) {
 	ptr->draw_match = 0;
 	ptr->win_match = 0;
 	ptr->loss_match = 0;
+	ptr->status = USER_OFFLINE_STATUS;
+	ptr->client_fd = client_fd;
+	ptr->message_num = 0; 
+    ptr->next = NULL;
+    *ptr_ptr = ptr; /* This can help handle NULL(empty linked list) case */
+    return ptr;
+}
+
+/*
+TempUser *create_temp_user(char *username): create a new user with the given username
+as an argument and return the address pointer to the new temp user struct
+*/
+
+TempUser *create_temp_user(char *username, int client_fd) {
+    // pointer to pointer of head
+    TempUser **ptr_ptr = &temp_user_head;
+    // pointer to head
+    TempUser *ptr = temp_user_head;
+
+    // find a place to add new temp user
+    while (ptr != NULL) {
+        ptr_ptr = &(ptr->next);
+        ptr = ptr->next;
+    }
+
+    // allocate memory for new temp user
+    ptr = malloc(sizeof(TempUser));
+    if (ptr == NULL) {
+        fprintf(stderr, "Out of memory when using create_temp_user function\n");
+        return NULL;
+    }
+
+    // set username
+    ptr->username = strdup(username);
+    if (ptr->username == NULL) {
+        fprintf(stderr, "Out of memory in the create_temp_user function during username setup\n");
+        free(ptr);
+        return NULL;
+    }
+
 	ptr->status = 0;
 	ptr->client_fd = client_fd;
 	ptr->message_num = 0; 
@@ -91,6 +179,7 @@ User *create_user(char *username, int client_fd) {
     *ptr_ptr = ptr; /* This can help handle NULL(empty linked list) case */
     return ptr;
 }
+
 
 /*
 User *find_user_with_name(char *username): find the existing user using the given name as argument and return 
@@ -122,6 +211,63 @@ User *find_user_with_fd(int client_fd) {
 	return NULL;
 }
 
+/*
+TempUser *find_temp_user_with_name(char *username): find the existing TempUser using the given name as argument and return 
+the pointer to the TempUser object. return NULL if not found
+*/
+TempUser *find_temp_user_with_name(char *username) {
+	// pointer to head
+    TempUser *ptr = temp_user_head;
+	while (ptr != NULL) {
+		if (strcmp(ptr->username, username) == 0)
+			return ptr;
+		ptr = ptr->next;
+	}
+	return NULL;
+}
+
+/*
+TempUser *find_temp_user_with_fd(int client_fd): find the existing TempUser using the client file descriptor as argument and return 
+the pointer to the TempUser object. return NULL if not found
+*/
+TempUser *find_temp_user_with_fd(int client_fd) {
+	// pointer to head
+    TempUser *ptr = temp_user_head;
+	while (ptr != NULL) {
+		if (ptr->client_fd == client_fd)
+			return ptr;
+		ptr = ptr->next;
+	}
+	return NULL;
+}
+
+/*
+TempUser *free_temp_user(TempUser *temp_user_pointer): free the TempUser
+*/
+void free_temp_user(TempUser *temp_user_pointer) {
+	printf("Clearing the TempUser: %s\n", temp_user_pointer->username);
+    // pointer to head
+	TempUser *cur = temp_user_head;
+
+    // if the TempUser we want to delete is at the beginning of the list
+    if (cur == temp_user_pointer) {
+        temp_user_head = temp_user_pointer->next;
+    } else {
+        while (cur->next != temp_user_pointer) {
+            cur = cur->next;
+            if (cur == NULL) {
+                fprintf(stderr, "TempUser does not exist -- error in free_temp_user\n");
+                return;
+            }
+        }
+        cur->next = temp_user_pointer->next;
+    }
+
+    // free allocated memory in temp_user_pointer
+    free(temp_user_pointer->username);
+    free(temp_user_pointer->password);
+}
+
 // writes a given string to the given client file descriptor
 void write_message(int client_fd, char *message) {
     write(client_fd, message, strlen(message) + 1);
@@ -133,7 +279,7 @@ void write_user_message_format(User *user, int client_fd) {
     // username can only be 100 (size of buffer)
     // +4 for ": " and the angle brackets, +7 for the integer (1 million messages for a given user),
     // and +1 for the null terminator.
-    int bufferSize = 100 + 4 + 6 + 1;
+    int bufferSize = 100 + 4 + 7 + 1;
     char* message = (char*)malloc(bufferSize);
 
     if (message == NULL) {
@@ -151,6 +297,63 @@ void write_user_message_format(User *user, int client_fd) {
 
 	// increment the message number
 	user->message_num = user->message_num + 1;
+}
+
+// this writes the default "<USERNAME: MESSAGE_NUMBER> " pre-prended to every user prompt
+void write_temp_user_message_format(TempUser *user, int client_fd) {
+	// Estimate the size needed for the formatted string
+    // username can only be 100 (size of buffer)
+    // +4 for ": " and the angle brackets, +7 for the integer (1 million messages for a given user),
+    // and +1 for the null terminator.
+    int bufferSize = 100 + 4 + 7 + 1;
+    char* message = (char*)malloc(bufferSize);
+
+    if (message == NULL) {
+        printf("Failed to allocate memory.\n");
+        return;
+    }
+
+    // sprintf to write the formatted message to the allocated buffer
+    sprintf(message, "<%s: %d> ", user->username, user->message_num);
+
+    write_message(client_fd, message);
+
+    // free the allocated memory
+    free(message);
+
+	// increment the message number
+	user->message_num = user->message_num + 1;
+}
+
+void log_user_in(User *found_user_by_name, int client_fd) {
+	printf("User %s loging in, with client = %d and status = %d\n", found_user_by_name->username, client_fd, found_user_by_name->status);
+
+	// we set the user to online and change their file descriptor
+	found_user_by_name->status = USER_ONLINE_STATUS;
+	found_user_by_name->client_fd = client_fd;
+
+	// display the welcome banner
+	write_message(client_fd, welcome_message());
+	// display the help command
+	write_message(client_fd, help_command());
+	// TODO: Check for unread messages here
+	// write_message(client[i], guest_user_message());
+	write_user_message_format(found_user_by_name, client_fd);
+}
+
+int close_client_connection(int client_fd, fd_set *allset) {
+	printf("Closing client %d connection\n", client_fd);
+	write_message(client_fd, connection_closed_message());
+	close(client_fd);
+	FD_CLR(client_fd, allset);
+	return -1;
+}
+
+int close_user_connection(User *exitting_user, int client_fd, fd_set *allset) {
+	exitting_user->status = USER_OFFLINE_STATUS;
+	// we want to reset the message number
+	exitting_user->message_num = 0;
+	return close_client_connection(client_fd, allset);
 }
 
 void sig_chld(int signo)
@@ -236,15 +439,6 @@ int main(int argc, char * argv[])
 				}
 			}
 
-			/*
-			   if (rec_sock < 0) {
-			   perror(": accept");
-			   exit(1);
-			   }
-			   */
-
-			/* print the remote socket information */
-
 			printf("remote machine = %s, port = %d.\n",
 					inet_ntoa(recaddr.sin_addr), ntohs(recaddr.sin_port)); 
 
@@ -253,8 +447,7 @@ int main(int argc, char * argv[])
 					client[i] = rec_sock; 
 					FD_SET(client[i], &allset);
 
-					// add one for the null terminator
-					write(client[i], initial_messsage(), strlen(initial_messsage()) + 1);
+					write_message(client[i], initial_messsage());
 
 					break;
 				}
@@ -271,94 +464,178 @@ int main(int argc, char * argv[])
 			if (FD_ISSET(client[i], &rset)) {
 				int num;
 				num = read(client[i], buf, 100);
+				printf("reading from = %d\n", client[i]);
 				if (num == 0) {
 					/* client exits */
-					close(client[i]);
-					FD_CLR(client[i], &allset);
-					client[i] = -1;
+					client[i] = close_client_connection(client[i], &allset);;
 				} else {
 					// command has been written, will need to evaluate it
 					char *extractedBuf = extractString(buf);
+					int numWords = 0;
+    				char** userInputs = extractStrings(extractedBuf, &numWords);
+					char *userInput = userInputs[0];
+
 					User *found_user = find_user_with_fd(client[i]);
-					// User not found, need to create a new user or log into an existing account
-					if (found_user == NULL) {
+					TempUser *found_temp_user = find_temp_user_with_fd(client[i]);
+					printf("this is the client_fd being handeled = %d\n", client[i]);
+					// Initial user workflow
+					// User and TempUser not found, need to create a guest or log into an existing account
+					// We also do this if we do find a user, but that user is offline in our system
+					if (
+						(found_user == NULL && found_temp_user == NULL) ||
+						(found_temp_user == NULL && found_user != NULL && found_user->status == USER_OFFLINE_STATUS)
+						) {
+						printf("user not found, this is their extracted input = %s and first input = %s\n", extractedBuf, userInput);
 						// if the user logs in as a guest
 						if (strcmp(extractedBuf, "guest") == 0) {
-							User *created_guest = create_user((char *)"guest", client[i]);
+							printf("handling guest \n");
+							TempUser *created_guest = create_temp_user((char *)"guest", client[i]);
+							created_guest->status = TEMP_USER_GUEST_STATUS;
 							// want a new line before displaying the help menu
 							write_message(client[i], (char *)"\n");
 							// display the help command
 							write_message(client[i], help_command());
 							// display the guest user introductory message
 							write_message(client[i], guest_user_message());
-							write_user_message_format(created_guest, client[i]);
+							write_temp_user_message_format(created_guest, client[i]);
 						}
 						// the user enters a username
 						else {
+							printf("handling username \n");
 							User *found_user_by_name = find_user_with_name(extractedBuf);
-							// if no user is found, we need to create one
+							// if no user is found, we need to prompt them for a password
+							// we create a temporary user where the username is an empty string, 
+							// we do this so we can associate a client file descriptor with a temporary user object
+							// we then set a flag on this user so that we know we have to get rid of it
 							if (found_user_by_name == NULL) {
-								create_user(extractedBuf, client[i]);
+								printf("no user found \n");
+								TempUser *created_temp = create_temp_user("", client[i]);
+								// no username is found but we still need to prompt for the password
+								created_temp->status = TEMP_USER_WAITING_PASSWORD_NOT_FOUND_STATUS;
+								// prompt the user to enter their password for their next read iteration
+								write_message(client[i], (char *)"password: ");
 							}
-							// if a user is found, the account already exists 
-							// - we need to change the client_fd and status variables so that we can follow the logged-in user workflow
+							// if a user is found, the account already exists
+							// we create a temp user for the given client file descriptor to avoid modifying the existing user account
 							else {
-								// TODO: implement
-								// status = 2
-								// client_fd = client[i]
+								printf("user found \n");
+								TempUser *created_temp = create_temp_user(extractedBuf, client[i]);
+
+								// there is an active connection on this account,
+								// we want to remember to revert everything if the user doesn't know the correct credentials
+								if (found_user_by_name->status == USER_ONLINE_STATUS) {
+									created_temp->status = TEMP_USER_ACTIVE_CONNECTION_PENDING_STATUS;
+								}
+								// the user doesn't have an active connection, we can just do what we need
+								else {
+									// we found this username but we still need to validate and prompt the password
+									created_temp->status = TEMP_USER_WAITING_ON_PASSWORD_STATUS;
+								}
+								// prompt the user to enter their password for their next read iteration
+								write_message(client[i], (char *)"password: ");
 							}
 						}
 					}
-					// if the user is logged in
-					else {
-						// if the logged in user is a guest, we now should only listen to the register, quit, and exit commands
-						if (strcmp(found_user->username, "guest") == 0) {
+					// we have a guest or a user trying actively logging in
+					else if (found_temp_user != NULL) {
+						printf("TempUser found!, this is their name = %s and status = %d\n", found_temp_user->username, found_temp_user->status);
+						// handle the guest
+						if (found_temp_user->status == TEMP_USER_GUEST_STATUS) {
 							// if the first word is "register"
-							if (strcmp(extractedBuf, "register") == 0) {
-								// TODO: implement the register command
-								// TODO: Handle case when the username registered already exists
-								write_message(client[i], (char *)"register");
+							if (strcmp(userInput, "register") == 0) {
+								// if the user only enters "register"
+								if (numWords == 1) {
+									register_command(client[i], "", "");
+								}
+								// if the user only enters "register USERNAME"
+								else if (numWords == 2) {
+									register_command(client[i], userInputs[1], "");
+								}
+								// if the user enters "register USERNAME PASSWORD", where anything after PASSWORD is ignored
+								else {
+									register_command(client[i], userInputs[1], userInputs[2]);
+								}
+								
 							}
-							else if (strcmp(extractedBuf, "exit") == 0 || strcmp(extractedBuf, "quit") == 0) {
-								// TODO: From the client-side this seems correct (the same behavior as the example server)
-								// but will need to track which user logged out
-								write_message(client[i], connection_closed_message());
-								close(client[i]);
-								FD_CLR(client[i], &allset);
-								client[i] = -1;
+							else if (strcmp(userInput, "exit") == 0 || strcmp(userInput, "quit") == 0) {
+								client[i] = close_client_connection(client[i], &allset);
+								free_temp_user(found_temp_user);
 							}
-							// the user needs to either enter the register command or exit
+							// the guest needs to either enter the register command or exit
 							else {
 								write_message(client[i], guest_user_warning_message());
 							}
 						}
-						// the logged in user is not a guest,
-						// we need to verify they have a valid password
-						// we need to listen to all commands
-						else {
-							if (strcmp(extractedBuf, "help") == 0 || strcmp(extractedBuf, "?") == 0) {
-								write_message(client[i], help_command());
+						// no username has been found for this user,
+						// instead of processing their password,
+						// we just kill their connection and free the temp user
+						else if (found_temp_user->status == TEMP_USER_WAITING_PASSWORD_NOT_FOUND_STATUS) {
+							printf("WAITING_PASSWORD_NOT_FOUND_STATUS.\n");
+							write_message(client[i], "Login failed!!\n");
+							client[i] = close_client_connection(client[i], &allset);
+							free_temp_user(found_temp_user);
+						}
+						// we previously found a username for this user
+						else if (found_temp_user->status == TEMP_USER_WAITING_ON_PASSWORD_STATUS || found_temp_user->status == TEMP_USER_ACTIVE_CONNECTION_PENDING_STATUS) {
+							printf("TEMP_USER_WAITING_ON_PASSWORD_STATUS OR ACTIVE, found_temp_user->status = %d.\n", found_temp_user->status);
+							// do another lookup to retrieve the username we previously found
+							User *found_user_by_name = find_user_with_name(found_temp_user->username);
+							// if the entered password matches, this user can be logged in
+							if (strcmp(found_user_by_name->password, userInput) == 0) {
+								// we previously found an active connection for this user
+								if (found_temp_user->status == TEMP_USER_ACTIVE_CONNECTION_PENDING_STATUS) {
+									// TODO: send the appropriate message to the client we are closing
+									close_client_connection(found_user_by_name->client_fd, &allset);
+								}
+								log_user_in(found_user_by_name, client[i]);
 							}
-							else if (strcmp(extractedBuf, "exit") == 0 || strcmp(extractedBuf, "quit") == 0) {
-								// TODO: From the client-side this seems correct (the same behavior as the example server)
-								// but will need to track which user logged out
-								close(client[i]);
-								FD_CLR(client[i], &allset);
-								client[i] = -1;
-							}
+							// otherwise, the password does not match
 							else {
-								// TODO: This should be a catch-all for unknown commands, for now echo the command back to the client
-								write(client[i], buf, num);
+								write_message(client[i], "Login failed!!\n");
+								client[i] = close_client_connection(client[i], &allset);
 							}
+							free_temp_user(found_temp_user);
+						}
+
+					}
+					// if the user is logged in
+					// we explicitly check that there is no temp user at this file descriptor to avoid improperly clearing them
+					else if (found_temp_user == NULL && found_user != NULL) {
+						printf("found_user.username = %s, client = %d.\n", found_user->username, client[i]);
+
+						// we need to listen to all commands
+						if (strcmp(userInput, "help") == 0 || strcmp(userInput, "?") == 0) {
+							write_message(client[i], help_command());
+						}
+						else if (strcmp(userInput, "exit") == 0 || strcmp(userInput, "quit") == 0) {
+							client[i] = close_user_connection(found_user, client[i], &allset);
+						}
+						else {
+							// TODO: This should be a catch-all for unknown commands, for now echo the command back to the client
+							write(client[i], buf, num);
 						}
 					}
+					else {
+						printf("NONE OF THE STATES WORKED! Debugging: \n");
+						if (found_user == NULL) {
+							printf("found_user is null \n");
+						} else {
+							printf("found_user is NOT null \n");
+							printf("found_user->username: %s \n", found_user->username);
+							printf("found_user->client_fd: %d \n", found_user->client_fd);
+						}
+						if (found_temp_user == NULL) {
+							printf("found_temp_user is null \n");
+						} else {
+							printf("found_temp_user is NOT null \n");
+							printf("found_temp_user->username: %s \n", found_temp_user->username);
+							printf("found_temp_user->client_fd: %d \n", found_temp_user->client_fd);
+						}
+					}
+					// Free the array of strings
+					free(userInputs); 
 				}
 			}
 		}
 	}
 }
-
-// TODO
-// test char limit for example server read
-// test control character clearing
-// confirm exit and quit are aliases
