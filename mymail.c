@@ -48,7 +48,7 @@ char *listmail(char *username) {
             } else {
                 s = 'R';
             }
-            sprintf(temp, "%3d%3c%12s%43s\n", count, s, cur->username, cur->title, asctime (timeinfo));
+            sprintf(temp, "%3d%3c%12s\"%40s\"   %s\n", count, s, cur->username, cur->title, asctime (timeinfo));
             strcat(ret_val, temp);
             count++;
         }
@@ -76,6 +76,8 @@ char *readmail(char *username, int num) {
     // find email
     while (cur != NULL) {
         if (count == num) {
+            // change status of email
+            cur->status = 1;
             timeinfo = localtime(&cur->date);
             sprintf(ret_val, "From: %s\nTitle: %s\nTime: %s\n\n%s", cur->username, cur->title, asctime (timeinfo), cur->message);
             return ret_val;
@@ -91,7 +93,7 @@ char *readmail(char *username, int num) {
 /*
 char *deletemail(char *username, int num): delete the #num mail of given username and return the message to response to user
 */
-int deletemail(char *username, int num) {
+char *deletemail(char *username, int num) {
     int count;
     char *ret_val;
     User *user;
@@ -175,21 +177,21 @@ int createmail(char *username, char *from, char *title, char *message) {
     if (ptr->title == NULL) {
         fprintf(stderr, "Out of memory in the createmail function during from setup\n");
         free(ptr);
-        return NULL;
+        return 1;
     }
 
     ptr->title = strdup(title);
     if (ptr->title == NULL) {
         fprintf(stderr, "Out of memory in the createmail function during title setup\n");
         free(ptr);
-        return NULL;
+        return 1;
     }
 
     ptr->message = strdup(message);
     if (ptr->title == NULL) {
         fprintf(stderr, "Out of memory in the createmail function during message setup\n");
         free(ptr);
-        return NULL;
+        return 1;
     }
 
     // set the send time
