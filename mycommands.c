@@ -15,7 +15,7 @@ char *help_command() {
     // TODO: the pound symbol "#" infront of each command is for the commands we do not have implemented,
     // remove them as we implement the commands
     char* RETURNED_STRING = 
-    "Commands supported:\n"
+    "\nCommands supported:\n"
     "  #who                     # List all online users\n"
     "  #stats [name]            # Display user information\n"
     "  #game                    # list all current games\n"
@@ -38,7 +38,7 @@ char *help_command() {
     "  #deletemail <msg_num>    # Delete the particular mail\n"
     "  #mail <id> <title>       # Send id a mail\n"
     "  #info <msg>              # change your information to <msg>\n"
-    "  #passwd <new>            # change password\n"
+    "  passwd <new>            # change password\n"
     "  exit                    # quit the system\n"
     "  quit                    # quit the system\n"
     "  help                    # print this message\n"
@@ -48,13 +48,14 @@ char *help_command() {
 }
 
 // this registers a given user
-void register_command(int client_fd, char *username, char *password) {
+void register_command(int client_fd, TempUser *temp_user, char *username, char *password) {
     User *found_user_by_name = find_user_with_name(username);
     // if no user is found, we create the user
     if (found_user_by_name == NULL) {
         User *created_user = create_user(username, -1);
         change_password_command(created_user, password);
         write_message(client_fd, (char *)"User registered.\n");
+        write_temp_user_message_format(temp_user, client_fd);
     }
     // if an existing user is found
     else {
@@ -83,7 +84,6 @@ void change_password_command(User *user, char *new_password) {
     user->password = strdup(new_password);
     if (user->password == NULL) {
         fprintf(stderr, "Out of memory when trying to change the password.\n");
-        // free_user(user);
         return;
     }
 }

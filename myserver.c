@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/select.h>
+#include <ctype.h>
 
 // Initialize nulls
 Game *game_head = NULL;
@@ -24,7 +25,7 @@ char** extractStrings(const char* input, int* count) {
     int words = 1;
     for (int i = 0; input[i] != '\0'; i++) {
         if (input[i] == ' ') {
-            words++;
+			words++;
         }
     }
 
@@ -94,6 +95,41 @@ char* extractString(const char* input) {
     result[length] = '\0'; // Null-terminate the new string
 
     return result;
+}
+
+char* trimSpaces(const char* input) {
+    if (input == NULL) {
+        return NULL;
+    }
+
+    // Pointers to the start and end of the input string
+    const char* start = input;
+    const char* end = input + strlen(input) - 1;
+
+    // Advance the starting pointer to the first non-space character
+    while (isspace((unsigned char)*start) && start <= end) {
+        start++;
+    }
+
+    // Move the end pointer back to the last non-space character
+    while (isspace((unsigned char)*end) && end >= start) {
+        end--;
+    }
+
+    // Calculate the new string length
+    size_t length = end - start + 1;
+
+    // Allocate memory for the trimmed string (+1 for the null terminator)
+    char* trimmed = (char*)malloc(length + 1);
+    if (trimmed == NULL) {
+        printf("Memory allocation failed\n");
+        return NULL;
+    }
+
+    strncpy(trimmed, start, length);
+    trimmed[length] = '\0';
+
+    return trimmed;
 }
 
 /*
@@ -471,8 +507,9 @@ int main(int argc, char * argv[])
 				} else {
 					// command has been written, will need to evaluate it
 					char *extractedBuf = extractString(buf);
+					char *trimmedString = trimSpaces(extractedBuf);
 					int numWords = 0;
-    				char** userInputs = extractStrings(extractedBuf, &numWords);
+    				char** userInputs = extractStrings(trimmedString, &numWords);
 					char *userInput = userInputs[0];
 
 					User *found_user = find_user_with_fd(client[i]);
@@ -485,9 +522,9 @@ int main(int argc, char * argv[])
 						(found_user == NULL && found_temp_user == NULL) ||
 						(found_temp_user == NULL && found_user != NULL && found_user->status == USER_OFFLINE_STATUS)
 						) {
-						printf("user not found, this is their extracted input = %s and first input = %s\n", extractedBuf, userInput);
+						printf("user not found, this is their extracted input = %s and first input = %s\n", trimmedString, userInput);
 						// if the user logs in as a guest
-						if (strcmp(extractedBuf, "guest") == 0) {
+						if (strcmp(trimmedString, "guest") == 0) {
 							printf("handling guest \n");
 							TempUser *created_guest = create_temp_user((char *)"guest", client[i]);
 							created_guest->status = TEMP_USER_GUEST_STATUS;
@@ -502,7 +539,7 @@ int main(int argc, char * argv[])
 						// the user enters a username
 						else {
 							printf("handling username \n");
-							User *found_user_by_name = find_user_with_name(extractedBuf);
+							User *found_user_by_name = find_user_with_name(trimmedString);
 							// if no user is found, we need to prompt them for a password
 							// we create a temporary user where the username is an empty string, 
 							// we do this so we can associate a client file descriptor with a temporary user object
@@ -519,7 +556,7 @@ int main(int argc, char * argv[])
 							// we create a temp user for the given client file descriptor to avoid modifying the existing user account
 							else {
 								printf("user found \n");
-								TempUser *created_temp = create_temp_user(extractedBuf, client[i]);
+								TempUser *created_temp = create_temp_user(trimmedString, client[i]);
 
 								// there is an active connection on this account,
 								// we want to remember to revert everything if the user doesn't know the correct credentials
@@ -545,15 +582,15 @@ int main(int argc, char * argv[])
 							if (strcmp(userInput, "register") == 0) {
 								// if the user only enters "register"
 								if (numWords == 1) {
-									register_command(client[i], "", "");
+									register_command(client[i], found_temp_user, "", "");
 								}
 								// if the user only enters "register USERNAME"
 								else if (numWords == 2) {
-									register_command(client[i], userInputs[1], "");
+									register_command(client[i], found_temp_user, userInputs[1], "");
 								}
 								// if the user enters "register USERNAME PASSWORD", where anything after PASSWORD is ignored
 								else {
-									register_command(client[i], userInputs[1], userInputs[2]);
+									register_command(client[i], found_temp_user, userInputs[1], userInputs[2]);
 								}
 								
 							}
@@ -583,9 +620,9 @@ int main(int argc, char * argv[])
 							// if the entered password matches, this user can be logged in
 							if (strcmp(found_user_by_name->password, userInput) == 0) {
 								// we previously found an active connection for this user
-								if (found_temp_user->status == TEMP_USER_ACTIVE_CONNECTION_PENDING_STATUS) {
-									// TODO: send the appropriate message to the client we are closing
-									close_client_connection(found_user_by_name->client_fd, &allset);
+								if (found_temp_user->status == TEMP_USER_ACTIVE_CONNECTION_PENDING_STATUS) {									
+									write_message(found_user_by_name->client_fd, "You login from another place.\n");
+									close_user_connection(found_user_by_name, found_user_by_name->client_fd, &allset);
 								}
 								log_user_in(found_user_by_name, client[i]);
 							}
@@ -606,13 +643,33 @@ int main(int argc, char * argv[])
 						// we need to listen to all commands
 						if (strcmp(userInput, "help") == 0 || strcmp(userInput, "?") == 0) {
 							write_message(client[i], help_command());
+							write_user_message_format(found_user, client[i]);
+						}
+						else if (strcmp(userInput, "register") == 0) {
+							write_message(client[i], "Please use a guest login to register new users.\n");
+							write_user_message_format(found_user, client[i]);
+						}
+						else if (strcmp(userInput, "passwd") == 0) {
+							// if the user only enters "passwd"
+							if (numWords == 1) {
+								change_password_command(found_user, "");
+							}
+							// if the user enters "passwd NEW_PASSWORD", where anything after NEW_PASSWORD is ignored
+							else {
+								change_password_command(found_user, userInputs[1]);
+							}
+							write_message(client[i], "Password changed.\n");
+							write_user_message_format(found_user, client[i]);
 						}
 						else if (strcmp(userInput, "exit") == 0 || strcmp(userInput, "quit") == 0) {
 							client[i] = close_user_connection(found_user, client[i], &allset);
 						}
+						else if (strcmp(userInput, "") == 0) {
+							write_user_message_format(found_user, client[i]);
+						}
 						else {
-							// TODO: This should be a catch-all for unknown commands, for now echo the command back to the client
-							write(client[i], buf, num);
+							write_message(client[i], "Command not supported.\n");
+							write_user_message_format(found_user, client[i]);
 						}
 					}
 					else {
