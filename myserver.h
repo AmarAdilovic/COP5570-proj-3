@@ -140,6 +140,9 @@ char *listmail(char *);
 char *readmail(char *, int);
 char *deletemail(char *, int);
 int createmail(char *, char *, char *, char *);
+TempMail *create_temp_mail(char *, char *, char *);
+int add_message(char *, char *, char *);
+int sendTempMail(char *, char *);
 
 
 #endif
