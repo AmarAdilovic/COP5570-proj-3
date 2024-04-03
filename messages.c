@@ -26,7 +26,7 @@ char *welcome_message() {
     "\t\t  %     Online Tic-tac-toe  Server      %\n"
     "\t\t %                                        %\n"
     "\t\t%                                          %\n"
-    "\t\t%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n\n"
+    "\t\t%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n\n\n"
 	);
 }
 
@@ -41,7 +41,7 @@ char *login_failed_message() {
 char *connection_closed_message() {
     return (
 	"Thank you for using Online Tic-tac-toe Server.\n"
-	"See you next time.\n"
+	"See you next time.\n\n"
 	);
 }
 
@@ -60,3 +60,23 @@ char *guest_user_warning_message() {
 	" You can only use 'register username password' as a guest.\n"
 	);
 }
+
+
+// <amar: 14> register newuser test test
+// Please use a guest login to register new users.
+
+// <amar: 0> exit
+// You are not in the room.
+// <amar: 1> Thank you for using Online Tic-tac-toe Server.
+// See you next time.
+
+// can just press enter forever
+
+// when logging out
+// <amar: 3> You are not in the room.
+
+// <amar: 4> You login from another place.
+// Thank you for using Online Tic-tac-toe Server.
+// See you next time.
+
+// Connection closed by foreign host.

@@ -12,3 +12,9 @@
 ctrl + c to kill server
 
 `make clean` to clean files
+
+## To debug:
+
+`gdb ./myserver`
+
+then `r PORT_NUM`

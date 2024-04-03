@@ -47,12 +47,43 @@ char *help_command() {
     return RETURNED_STRING;
 }
 
+// this registers a given user
+void register_command(int client_fd, char *username, char *password) {
+    User *found_user_by_name = find_user_with_name(username);
+    // if no user is found, we create the user
+    if (found_user_by_name == NULL) {
+        User *created_user = create_user(username, -1);
+        change_password_command(created_user, password);
+        write_message(client_fd, (char *)"User registered.\n");
+    }
+    // if an existing user is found
+    else {
+        // username can only be 100 (size of buffer)
+        char* message = (char*)malloc(100 + 50);
+
+        if (message == NULL) {
+            printf("Failed to allocate memory.\n");
+            return;
+        }
+
+        // sprintf to write the formatted message to the allocated buffer
+        sprintf(message, "%s has been registered. Please change the username.\n", found_user_by_name->username);
+
+        write_message(client_fd, message);
+
+        // free the allocated memory
+        free(message);
+
+    }
+}
+
+
 // this changes the password for a given user
 void change_password_command(User *user, char *new_password) {
     user->password = strdup(new_password);
-    if (user->username == NULL) {
-        fprintf(stderr, "Out of memory when trying to change the password, deleting user.\n");
-        free(user);
+    if (user->password == NULL) {
+        fprintf(stderr, "Out of memory when trying to change the password.\n");
+        // free_user(user);
         return;
     }
 }
