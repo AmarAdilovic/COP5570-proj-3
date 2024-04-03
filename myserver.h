@@ -107,10 +107,11 @@ int isWin(Game *);
 User *create_user(char *, int);
 User *find_user_with_name(char *);
 void write_message(int, char *);
+void write_temp_user_message_format(TempUser *, int);
 
 /* prototypes from mycommands.c */
 char *help_command(void);
-void register_command(int, char *, char *);
+void register_command(int, TempUser *, char *, char *);
 void change_password_command(User *, char *);
 
 /* prototypes from messages.c */
