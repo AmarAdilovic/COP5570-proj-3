@@ -204,4 +204,121 @@ int createmail(char *username, char *from, char *title, char *message) {
 }
 
 
+/*
+int create_temp_mail(char *from, char *to, char *title): create temporary mail so that the user can append message to mail block.
+Return pointer to new mail
+*/
+TempMail *create_temp_mail(char *from, char *to, char *title) {
+    // pointer to head
+    TempMail *ptr = temp_mail_head;
+    // pointer to pointer of head
+    TempMail **ptr_ptr = &temp_mail_head;
+
+    // find a place to add new temp mail
+    while (ptr != NULL) {
+        ptr_ptr = &(ptr->next);
+        ptr = ptr->next;
+    }
+
+    // Allocate memory for new temp mail
+    ptr = malloc(sizeof(TempMail));
+    if (ptr == NULL) {
+        fprintf(stderr, "Out of memory when using create_temp_mail function\n");
+        return NULL;
+    }
+
+    // set field for temp mail
+    ptr->from = strdup(from);
+    if (ptr->from == NULL) {
+        fprintf(stderr, "Out of memory when using create_temp_mail function\n");
+        return NULL;
+    } 
+    ptr->to = strdup(to);
+    if (ptr->to == NULL) {
+        fprintf(stderr, "Out of memory when using create_temp_mail function\n");
+        return NULL;
+    } 
+    ptr->title = strdup(title);
+    if (ptr->title == NULL) {
+        fprintf(stderr, "Out of memory when using create_temp_mail function\n");
+        return NULL;
+    } 
+    ptr->message = (char*) malloc(1000000*sizeof(char));
+    if (ptr->message == NULL) {
+        fprintf(stderr, "Out of memory when using create_temp_mail function at message\n");
+        return NULL;
+    } 
+    sprintf(ptr->message, " ");
+    ptr->next = NULL;
+    *ptr_ptr = ptr;
+    return ptr;
+}
+
+/*
+int add_message(char *from, char *to, char *m): add new line of message to temp message
+return 0 if success, -1 if temp message not found, 1 otherwise
+*/
+int add_message(char *from, char *to, char *m) {
+    TempMail *ptr = temp_mail_head;
+
+    // find the message
+    while (ptr != NULL) {
+        if (strcmp(ptr->from, from) == 0 && strcmp(ptr->to,to) == 0) {
+            // found the message
+            // add new message to current message
+            strcat(ptr->message, m);
+        }
+        ptr = ptr->next;
+    }
+
+    // message not found
+    return -1;
+}
+
+/*
+int sendTempMail(char *from, char *to): this function is called when user click . and new line
+in the message. 0 if success send the email, 1 otherwise
+TODO: notify user about new mail after calling this function
+*/
+int sendTempMail(char *from, char *to) {
+    TempMail *cur;
+    TempMail *ptr = temp_mail_head;
+    cur = ptr;
+    int ret_val = 0;
+
+    // find the message
+    // if the message is at the beggining of linkedlist
+    if (strcmp(ptr->from, from) == 0 && strcmp(ptr->to,to) == 0) {
+        // delete the node from linkedlist
+        temp_mail_head = temp_mail_head->next;
+    }
+
+    while (ptr != NULL) {
+        if (strcmp(ptr->from, from) == 0 && strcmp(ptr->to,to) == 0) {
+            // found the message
+            // delete the node from linkedlist
+            cur->next = ptr->next;
+            break;
+        }
+        cur = ptr;
+        ptr = ptr->next;
+    }
+
+    if (ptr == NULL) {
+        // mail not exist
+        return 1;
+    }
+
+    ret_val = createmail(ptr->to, ptr->from, ptr->title, ptr->message);
+    free(ptr->to);
+    free(ptr->from);
+    free(ptr->title);
+    free(ptr->message);
+    free(ptr);
+    return ret_val;
+}
+
+
+
+
 
