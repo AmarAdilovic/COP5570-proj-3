@@ -11,9 +11,9 @@ typedef struct block_block {
 
 typedef struct mail_block {
     char *username; /* name of sender */
-    int *status; /* 0 for not read, 1 for read */
-    int *title; /* title of the mail */
-    int *message; /* message inside mail */
+    int status; /* 0 for not read, 1 for read */
+    char *title; /* title of the mail */
+    int message; /* message inside mail */
     struct mail_block *next;
 } Mail;
 
@@ -62,7 +62,7 @@ Game *find_game(char *, char *);
 Game *create_game(char *, char *, int);
 void delete_game(Game *);
 int add_observer(Game *, User *);
-char *print_games();
+char *print_games(void);
 void delete_observer(Game *, User *);
 int move(char *, Game *);
 char *print_board(Game *);
@@ -82,5 +82,10 @@ char *login_failed_message(void);
 char *connection_closed_message(void);
 char *guest_user_message(void);
 char *guest_user_warning_message(void);
+
+/* prototypes from backup.c */
+void serialize(char *);
+void deserialize(char *);
+
 
 #endif
