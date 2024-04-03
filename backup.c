@@ -17,13 +17,23 @@ char *encrypt(char *str) {
     char *ret_val, *temp;
     int i, len;
     ret_val = (char*) malloc(3600*sizeof(char));
+    if (str == NULL) {
+        sprintf(ret_val, "NULL");
+        return ret_val;
+    }
     temp = (char*) malloc(10*sizeof(char));
     len = strlen(str);
     for (i = 0; i < len; i++) {
-        sprintf(temp, "%d|", str[len]);
         if (i == len)
-            sprintf(temp, "%d", str[len]);
-        strcat(ret_val, temp);
+            sprintf(temp, "%d", str[i]);
+        else 
+            sprintf(temp, "%d|", str[i]);
+        printf("temp: %s\n", temp);
+        printf("ret_val: %s\n", ret_val);
+        if (i == 0)
+            sprintf(ret_val, temp);
+        else
+            strcat(ret_val, temp);
     }
     free(temp);
     return ret_val;
@@ -34,15 +44,21 @@ char *decrypt(char *str): decrypt the ascii string and return the pointer to ori
 */
 char *decrypt(char *str) {
     char *ret_val, *token, *temp;
-    int i, temp_int;
+    int temp_int;
     ret_val = (char*) malloc(1200*sizeof(char));
+    if (strcmp("NULL", str) == 0) {
+        sprintf(ret_val, "");
+        return ret_val;
+    }
     temp = (char*) malloc(10*sizeof(char));
     token = strtok(str, "|");
 
     while (token != NULL) {
+        printf("%s\n", token);
         temp_int = atoi(token);
         sprintf(temp, "%c", temp_int);
         strcat(ret_val, temp);
+        token = strtok(NULL, "|");
     }
     free(temp);
     return ret_val;
@@ -58,7 +74,7 @@ Block_users: name,
 */
 void serialize_block(FILE *file, Blocked_user *cur) {
     fprintf(file, "${");
-    for (cur; cur != NULL; cur = cur->next) {
+    for (; cur != NULL; cur = cur->next) {
         // save blocked_user username
         fprintf(file, "%s, ", cur->username);
     }
@@ -73,7 +89,7 @@ mails: ^(name, status, **(title)**, **(message)**)^,
 */
 void serialize_mail(FILE *file, Mail *cur) {
     fprintf(file, "${");
-    for (cur; cur != NULL; cur = cur->next) {
+    for (; cur != NULL; cur = cur->next) {
         // save sender username
         fprintf(file, "^(%s, ", cur->username);
         // save mail status
@@ -81,7 +97,7 @@ void serialize_mail(FILE *file, Mail *cur) {
         // save mail title
         fprintf(file, "%s, ", cur->title);
         // save mail message
-        fprintf(file, "%s)^, ", cur->message);
+        fprintf(file, "%d)^, ", cur->message);
     }
     fprintf(file, "}$");
 }
@@ -98,18 +114,19 @@ void serialize(char *file_name) {
     char *e_username, *e_pwd, *e_info;
     User *cur = user_head;
 
-    // encrypt info
-    e_username = encrypt(cur->username);
-    e_pwd = encrypt(cur->password);
-    e_info = encrypt(cur->info);
-
     // Save acoount information to file_name file
     FILE* file = fopen(file_name, "w");
     if (file == NULL) {
         exit(1);
     }
 
-    for (cur; cur != NULL; cur = cur->next) {
+    for (;cur != NULL; cur = cur->next) {
+        // encrypt info
+        e_username = encrypt(cur->username);
+        e_pwd = encrypt(cur->password);
+        e_info = encrypt(cur->info);
+        
+        
         // open object and save username
         fprintf(file, "%s ", e_username);
         // save password
@@ -129,12 +146,12 @@ void serialize(char *file_name) {
         // save mail
         serialize_mail(file, cur->mail_head);
         */
-
         // free encrypted string
         free(e_username);
         free(e_pwd);
         free(e_info);
     }
+
     fclose(file);
 }
 
@@ -151,18 +168,23 @@ void deserialize(char *file_name) {
     // pointer to head
     User *ptr = user_head;
 
+
+    name = (char*) malloc(1200*sizeof(char));
+    pwd = (char*) malloc(1200*sizeof(char));
+    info = (char*) malloc(1200*sizeof(char));
+
     // save account information to file_name file
     FILE* file = fopen(file_name, "r");
     if (file == NULL) {
         exit(2);
     }
 
-    while(fscanf(file, "%s %s %s %d %d %d", &name, &pwd, &info, &win_match, &loss_match, &draw_match) > 0) {
+    while(fscanf(file, "%s %s %s %d %d %d", name, pwd, info, &win_match, &loss_match, &draw_match) > 0) {
         // allocate memory for new user
         ptr = malloc(sizeof(User));
         if (ptr == NULL) {
             fprintf(stderr, "Out of memory when using create_user function\n");
-            return NULL;
+            return;
         }
 
         // set username
@@ -182,11 +204,14 @@ void deserialize(char *file_name) {
         ptr->draw_match = draw_match;
 
         // set it to the memory
-        ptr_ptr = &ptr;
+        *ptr_ptr = ptr;
         ptr->next = NULL;
         ptr_ptr = &(ptr->next);
-
     }
+
+    free(name);
+    free(pwd);
+    free(info);
 
 }
 
