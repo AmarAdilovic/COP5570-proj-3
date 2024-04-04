@@ -20,6 +20,7 @@ Game *game_head = NULL;
 User *user_head = NULL;
 TempUser *temp_user_head = NULL;
 TempMail *temp_mail_head;
+Request *request_head;
 
 char** extractStrings(const char* input, int* count) {
     // Count the number of words to determine the size of the array of strings
@@ -446,7 +447,13 @@ int main(int argc, char * argv[])
 	int client[MAXCONN];
 	char buf[100];
 	fd_set allset, rset;	
-	int maxfd;
+	int maxfd, time, check_flag;
+	User *opponent;
+	char piece;
+	char *temp, *user_temp_str; // temp is an allocate space DO NOT FREE, user_temp_str is pointer
+	Game *game_ptr;
+
+	temp = (char*) malloc(100*sizeof(char));
 
 	abc.sa_handler = sig_chld;
 	sigemptyset(&abc.sa_mask);
@@ -691,6 +698,92 @@ int main(int argc, char * argv[])
 							// TODO: test after the game-related functions are implemented
 							write_message(client[i], print_games());
 							write_user_message_format(found_user, client[i]);
+						}
+						else if (strcmp(userInput, "match") == 0) {
+							// match command
+							if (numWords != 3 && numWords != 4) {
+								write_message(client[i], "match <name> <b|w> [t]\n");
+								write_user_message_format(found_user, client[i]);
+							} else {
+								opponent = find_user_with_name(userInputs[1]); 
+								if (opponent == NULL) {
+									write_message(client[i], "User not exist!\n");
+									write_user_message_format(found_user, client[i]);
+								} else if (strcmp(opponent->username, found_user->username) == 0) {
+									write_message(client[i], "You cannot have a match with yourself.\n");
+									write_user_message_format(found_user, client[i]);
+								} else if (opponent->status == 0) {
+									write_message(client[i], "User is not online\n");
+									write_user_message_format(found_user, client[i]);
+								} else if (userInputs[2][0] != 'b' && userInputs[2][0] != 'w') {
+									write_user_message_format(found_user, client[i]);
+									continue;
+								} else {
+									// TODO: check if the last argument is number or not
+									time = 600;
+									if (numWords == 4) {
+										time = atoi(userInputs[3]);
+									} 
+									printf("DEBUG: time %d\n ", time);
+									piece = userInputs[2][0];
+									// check if request exist
+									check_flag = check_request(found_user->username, opponent->username, piece, time);
+									printf("DEBUG: check_flag %d\n ", check_flag);
+									if (check_flag == 0) {
+										// new request
+										create_request(found_user->username, opponent->username, piece, time);
+										// let other player know 
+										if (piece == 'w') {
+											piece = 'b';
+										} else {
+											piece = 'w';
+										}
+
+										sprintf(temp, "%s invite your for a game <match %s %c %d>\n", found_user->username, found_user->username, piece, time);
+										write_message(opponent->client_fd, temp);
+										write_user_message_format(found_user, found_user->client_fd);
+										write_user_message_format(opponent, opponent->client_fd);
+									} else if (check_flag == 1) {
+										// request exist and all information match
+
+										// delete request
+										delete_request_user(opponent->username);
+										delete_request_user(found_user->username);
+
+										// create game
+										if (piece == 'b') {
+											// create game
+											game_ptr = create_game(found_user->username, opponent->username, time);
+											// get board
+											user_temp_str = print_board(game_ptr);
+											if (user_temp_str == NULL) {
+												printf("Error: not found board!");
+												return 1;
+											}
+											// send board to both user
+											write_message(opponent->client_fd, user_temp_str);
+											write_message(found_user->client_fd, user_temp_str);
+											write_user_message_format(opponent, opponent->client_fd);
+											write_user_message_format(found_user, found_user->client_fd);
+											// free the board string
+											free(user_temp_str);
+										}
+
+									} else {
+										// the detail of game is different 
+										
+										// create new request for the game
+										create_request(found_user->username, opponent->username, piece, time);
+										
+										// print Warning string to user
+										sprintf(temp,"%s; %s.\n", get_request(opponent->username, found_user->username), get_request(found_user->username, opponent->username));
+										write_message(opponent->client_fd, temp);
+										write_message(found_user->client_fd, temp);
+										write_user_message_format(opponent, opponent->client_fd);
+										write_user_message_format(found_user, found_user->client_fd);
+									}
+								}
+							}
 						}
 						else if (strcmp(userInput, "passwd") == 0) {
 							// if the user only enters "passwd"
