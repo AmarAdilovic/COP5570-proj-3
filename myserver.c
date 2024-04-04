@@ -165,6 +165,23 @@ char* trimSpaces(const char* input) {
     return trimmed;
 }
 
+void removeFirstWords(char *array[], int totalElements, int i) {
+    if (i >= totalElements) {
+        // If i is equal to or larger than totalElements clear the array by setting the first element to NULL.
+        array[0] = NULL;
+        return;
+    }
+
+    int j;
+    for (j = 0; j < totalElements - i; ++j) {
+        array[j] = array[j + i];
+    }
+
+    // Set the new end of the array to NULL if the array had a NULL terminator.
+    array[j] = NULL;
+}
+
+
 /*
 User *create_user(char *username): create a new user with the given username
 as an argument and return the address pointer to the new user struct
@@ -843,6 +860,24 @@ int main(int argc, char * argv[])
 							// if the user enters "shout ANY STRING"
 							else {
 								shout_command(found_user, userInputs, numWords);
+							}
+
+							write_user_message_format(found_user, client[i]);
+						}
+						else if (strcmp(userInput, "tell") == 0) {
+							// if the user only enters "tell"
+							if (numWords == 1) {
+								tell_command(found_user, (char *)"", (char **)"", 0);
+							}
+							// if the user enters "tell USERNAME"
+							else if (numWords == 2) {
+								tell_command(found_user, userInputs[1], (char **)"", 1);
+							}
+							// if the user enters "tell USERNAME ANY STRING"
+							else {
+								char *userName = userInputs[1];
+								removeFirstWords(userInputs, numWords, 1);
+								tell_command(found_user, userName, userInputs, (numWords - 1));
 							}
 
 							write_user_message_format(found_user, client[i]);
