@@ -20,6 +20,7 @@ Game *game_head = NULL;
 User *user_head = NULL;
 TempUser *temp_user_head = NULL;
 TempMail *temp_mail_head;
+Request *request_head;
 
 char** extractStrings(const char* input, int* count) {
     // Count the number of words to determine the size of the array of strings
