@@ -263,6 +263,11 @@ void delete_observer(Game *game, User *user) {
     Observer *cur;
     cur = ptr;
 
+    // error: oberserver empty
+    if (game->observer_head == NULL) {
+        return;
+    }
+
     // if the game we want to delete is at the beginning of the list
     if (user == ptr->user) {
         game->observer_head = ptr->next;
