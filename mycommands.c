@@ -25,8 +25,8 @@ char *help_command() {
     "  #<A|B|C><1|2|3>          # Make a move in a game\n"
     "  #resign                  # Resign a game\n"
     "  #refresh                 # Refresh a game\n"
-    "  #shout <msg>             # shout <msg> to every one online\n"
-    "  #tell <name> <msg>       # tell user <name> message\n"
+    "  shout <msg>             # shout <msg> to every one online\n"
+    "  tell <name> <msg>       # tell user <name> message\n"
     "  #kibitz <msg>            # Comment on a game when observing\n"
     "  #' <msg>                 # Comment on a game\n"
     "  #quiet                   # Quiet mode, no broadcast messages\n"
@@ -220,4 +220,46 @@ void shout_command(User *user, char** user_inputs, int num_words) {
         }
 		ptr = ptr->next;
 	}
+    free(message);
+}
+
+// sends a message to a specific online user from a specific user
+// TODO: unless the specific user has been blocked
+void tell_command(User *user, char *user_name, char** user_inputs, int num_words) {
+    // user input can only be 100
+    // username can maximum be 100
+    // 50 for some buffer
+    char* recepient_message = (char*)malloc(100 + 100 + 50);
+    // username can maximum be 100
+    // 50 for some buffer
+    char* sender_message = (char*)malloc(100 + 50);
+    char* combined = (num_words == 1) ? "\n" : combineUserInputs(user_inputs, num_words);
+
+    strcpy(recepient_message, "");
+    strcpy(sender_message, "");
+
+    sprintf(
+        recepient_message,
+        "%s: %s\n",
+        user->username,
+        combined
+        );
+
+    User *ptr = user_head;
+    while (ptr != NULL) {
+        if (strcmp(ptr->username, user_name) == 0 && ptr->status == USER_ONLINE_STATUS) {
+            write_message(ptr->client_fd, recepient_message);
+        }
+        else if (strcmp(ptr->username, user_name) == 0 && ptr->status == USER_OFFLINE_STATUS) {
+            sprintf(
+                sender_message,
+                "User %s is not online.\n",
+                user_name
+                );
+            write_message(user->client_fd, sender_message);
+        }
+		ptr = ptr->next;
+	}
+    free(recepient_message);
+    free(sender_message);
 }

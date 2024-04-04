@@ -130,6 +130,7 @@ void write_message(int, char *);
 void write_temp_user_message_format(TempUser *, int);
 char* combineUserInputs(char**, int);
 int count_online_users();
+void removeFirstWords(char **, int, int);
 
 /* prototypes from mycommands.c */
 char *help_command(void);
@@ -139,6 +140,7 @@ void stats_command(int, char *);
 void info_command(User *, char**, int);
 void who_command(int);
 void shout_command(User *, char**, int);
+void tell_command(User *,  char *, char **, int);
 
 /* prototypes from messages.c */
 char *initial_messsage(void);
