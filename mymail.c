@@ -100,6 +100,10 @@ char *deletemail(char *username, int num) {
     Mail *cur, *ptr;
 
     user = find_user_with_name(username);
+    if (user == NULL) {
+        fprintf(stderr, "User not exist in deletemail \n");
+        return NULL;
+    }
     ret_val = (char*) malloc(100*sizeof(char));
     cur = user->mail_head;
     count = 0;
@@ -285,6 +289,10 @@ int sendTempMail(char *from, char *to) {
     TempMail *ptr = temp_mail_head;
     cur = ptr;
     int ret_val = 0;
+
+    // empty temp 
+    if (temp_mail_head == NULL)
+        return 1;
 
     // find the message
     // if the message is at the beggining of linkedlist

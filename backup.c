@@ -28,8 +28,9 @@ char *encrypt(char *str) {
             sprintf(temp, "%d", str[i]);
         else 
             sprintf(temp, "%d|", str[i]);
+            
         if (i == 0)
-            sprintf(ret_val, temp);
+            sprintf(ret_val, "%s", temp);
         else
             strcat(ret_val, temp);
     }

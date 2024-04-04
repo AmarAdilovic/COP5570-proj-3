@@ -16,6 +16,11 @@ int delete_request_user(char *user) {
     Request *ptr = request_head;
     cur = ptr;
 
+    // empty list
+    if (ptr == NULL) {
+        return 1;
+    }
+
     // if request is in the beginning of the list
     if (strcmp(ptr->from, user) == 0 || strcmp(ptr->to, user) == 0) {
         request_head = request_head->next;
@@ -27,11 +32,11 @@ int delete_request_user(char *user) {
 
     while (ptr != NULL) {
         if (strcmp(ptr->from, user) == 0 || strcmp(ptr->to, user) == 0) {
-            cur = ptr->next;
-            free(cur->from);
-            free(cur->to);
-            free(cur);
-            return delete_request_user(user);;
+            cur->next = ptr->next;
+            free(ptr->from);
+            free(ptr->to);
+            free(ptr);
+            return delete_request_user(user);
         }
         cur = ptr;
         ptr = ptr->next;
@@ -50,6 +55,11 @@ int delete_request(char *from, char *to) {
     Request *ptr = request_head;
     cur = ptr;
 
+    // empty list
+    if (ptr == NULL) {
+        return 1;
+    }
+
     // if request is in the beggining of the list
     if (strcmp(ptr->from, from) == 0 && strcmp(ptr->to, to) == 0) {
         request_head = request_head->next;
@@ -61,10 +71,10 @@ int delete_request(char *from, char *to) {
 
     while (ptr != NULL) {
         if (strcmp(ptr->from, from) == 0 && strcmp(ptr->to, to) == 0) {
-            cur = ptr->next;
-            free(cur->from);
-            free(cur->to);
-            free(cur);
+            cur->next = ptr->next;
+            free(ptr->from);
+            free(ptr->to);
+            free(ptr);
             return 0;
         }
         cur = ptr;
