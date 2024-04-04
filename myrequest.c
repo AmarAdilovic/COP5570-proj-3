@@ -8,6 +8,39 @@ Purpose: This file is used to handle game request
 #include <stdlib.h>
 
 
+/* 
+int delete_request_user(char *user): delete the request related to given user. Return 0 if success, 1 otherwise
+*/
+int delete_request_user(char *user) {
+    Request *cur;
+    Request *ptr = request_head;
+    cur = ptr;
+
+    // if request is in the beginning of the list
+    if (strcmp(ptr->from, user) == 0 || strcmp(ptr->to, user) == 0) {
+        request_head = request_head->next;
+        free(cur->from);
+        free(cur->to);
+        free(cur);
+        return delete_request_user(user);
+    }
+
+    while (ptr != NULL) {
+        if (strcmp(ptr->from, user) == 0 || strcmp(ptr->to, user) == 0) {
+            cur = ptr->next;
+            free(cur->from);
+            free(cur->to);
+            free(cur);
+            return delete_request_user(user);;
+        }
+        cur = ptr;
+        ptr = ptr->next;
+    }
+
+    return 0;
+}
+
+
 /*
 int delete_request(char *from, char *to): delete the request with from and to exit in 
 linkedlist, 0 if delete success, 1 if request did not exist
