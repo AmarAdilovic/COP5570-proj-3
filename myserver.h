@@ -16,7 +16,7 @@
 typedef struct block_block {
     char *username;
     struct block_block *next;
-} Blocked_user;
+} BlockedUser;
 
 typedef struct mail_block {
     char *username; /* name of sender */
@@ -53,7 +53,7 @@ typedef struct user_block {
     1 is quiet mode,
     */
     int quiet;
-    Blocked_user* block_head; /* head of linked list of block users */
+    BlockedUser* block_head; /* head of linked list of block users */
     Mail* mail_head; /* head of linked list of mails to user */
     int message_num; /* count the current message number */
     struct user_block *next;
@@ -131,6 +131,9 @@ void write_temp_user_message_format(TempUser *, int);
 char* combineUserInputs(char**, int);
 int count_online_users();
 void removeFirstWords(char **, int, int);
+int create_blocked_user(char *, User *);
+BlockedUser *find_blocked_user_with_name(char *, BlockedUser *);
+void delete_blocked_user(char *, User *);
 
 /* prototypes from mycommands.c */
 char *help_command(void);
@@ -142,6 +145,8 @@ void who_command(int);
 void shout_command(User *, char**, int);
 void tell_command(User *,  char *, char **, int);
 void change_quiet_command(User *, int);
+void block_command(User *, char *);
+void unblock_command(User *, char *);
 
 /* prototypes from messages.c */
 char *initial_messsage(void);

@@ -223,6 +223,7 @@ User *create_user(char *username, int client_fd) {
 	ptr->quiet = 0;
 	ptr->client_fd = client_fd;
 	ptr->message_num = 0; 
+	ptr->block_head = NULL;
     ptr->next = NULL;
     *ptr_ptr = ptr; /* This can help handle NULL(empty linked list) case */
     return ptr;
@@ -268,6 +269,69 @@ TempUser *create_temp_user(char *username, int client_fd) {
     return ptr;
 }
 
+int create_blocked_user(char *username, User *user) {
+	// pointer to pointer of head
+    BlockedUser **ptr_ptr = &user->block_head;
+    // pointer to head
+    BlockedUser *ptr = user->block_head;
+
+    // find a place to add new observer
+    while (ptr != NULL) {
+        ptr_ptr = &(ptr->next);
+        ptr = ptr->next;
+    }
+
+    // allocate memory for new observer
+    ptr = malloc(sizeof(BlockedUser));
+    if (ptr == NULL) {
+        fprintf(stderr, "Out of memory when using create_blocked_user function\n");
+        return 1;
+    }
+
+    // set username
+    ptr->username = strdup(username);
+    if (ptr->username == NULL) {
+        fprintf(stderr, "Out of memory in the create_blocked_user function during username setup\n");
+        free(ptr);
+        return 1;
+    }
+	
+	ptr->next = NULL;
+    *ptr_ptr = ptr;
+
+    return 0;
+}
+
+void delete_blocked_user(char *username, User *user) {
+    // pointer to head
+    BlockedUser *ptr = user->block_head;
+    BlockedUser *cur;
+    cur = ptr;
+
+    // error: BlockedUser empty
+    if (user->block_head == NULL) {
+        return;
+    }
+
+    // if the blocked user we want to delete is at the beginning of the list
+    if (strcmp(ptr->username, username) == 0) {
+        user->block_head = ptr->next;
+    } else {
+        while (ptr->next != NULL && strcmp(ptr->next->username, username) != 0) {
+            ptr = ptr->next;
+        }
+        if (ptr->next == NULL) {
+            fprintf(stderr, "User not exist in blocked user list -- error in delete_blocked_user\n");
+            return;
+        }
+        cur = ptr->next;
+        ptr->next = cur->next;
+    }
+    free(cur);
+}
+
+
+
 
 /*
 User *find_user_with_name(char *username): find the existing user using the given name as argument and return 
@@ -300,21 +364,6 @@ User *find_user_with_fd(int client_fd) {
 }
 
 /*
-TempUser *find_temp_user_with_name(char *username): find the existing TempUser using the given name as argument and return 
-the pointer to the TempUser object. return NULL if not found
-*/
-TempUser *find_temp_user_with_name(char *username) {
-	// pointer to head
-    TempUser *ptr = temp_user_head;
-	while (ptr != NULL) {
-		if (strcmp(ptr->username, username) == 0)
-			return ptr;
-		ptr = ptr->next;
-	}
-	return NULL;
-}
-
-/*
 TempUser *find_temp_user_with_fd(int client_fd): find the existing TempUser using the client file descriptor as argument and return 
 the pointer to the TempUser object. return NULL if not found
 */
@@ -323,6 +372,17 @@ TempUser *find_temp_user_with_fd(int client_fd) {
     TempUser *ptr = temp_user_head;
 	while (ptr != NULL) {
 		if (ptr->client_fd == client_fd)
+			return ptr;
+		ptr = ptr->next;
+	}
+	return NULL;
+}
+
+BlockedUser *find_blocked_user_with_name(char *username, BlockedUser *blocked_user_head) {
+	// pointer to head
+    BlockedUser *ptr = blocked_user_head;
+	while (ptr != NULL) {
+		if (strcmp(ptr->username, username) == 0)
 			return ptr;
 		ptr = ptr->next;
 	}
@@ -892,6 +952,31 @@ int main(int argc, char * argv[])
 							write_message(client[i], "Enter nonquiet mode.\n");
 							write_user_message_format(found_user, client[i]);
 						}
+						else if (strcmp(userInput, "block") == 0) {
+							// if the user only enters "block"
+							if (numWords == 1) {
+								block_command(found_user, "");
+							}
+							// if the user enters "block USERNAME", where anything after USERNAME is ignored
+							else {
+								block_command(found_user, userInputs[1]);
+							}
+
+							write_user_message_format(found_user, client[i]);
+						}
+						else if (strcmp(userInput, "unblock") == 0) {
+							// if the user only enters "unblock"
+							if (numWords == 1) {
+								write_message(client[i], "Usage: unblock <id>\n");
+							}
+							// if the user enters "unblock USERNAME", where anything after USERNAME is ignored
+							else {
+								unblock_command(found_user, userInputs[1]);
+							}
+
+							write_user_message_format(found_user, client[i]);
+						}
+						// 
 						else if (strcmp(userInput, "game") == 0) {
 							// TODO: test after the game-related functions are implemented
 							write_message(client[i], print_games());

@@ -7,7 +7,7 @@
 
 `./myserver PORT_NUM` where PORT_NUM can be any valid port (for example, 53127)
 
-`telnet IP_ADDR PORT_NUM` where IP_ADDR is given by the server and PORT_NUM is set
+`telnet IP_ADDR PORT_NUM` from another terminal, where IP_ADDR is given by the server and PORT_NUM is set
 
 ctrl + c to kill server
 
