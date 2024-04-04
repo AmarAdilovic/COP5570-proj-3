@@ -197,6 +197,7 @@ void change_password_command(User *user, char *new_password) {
 }
 
 // sends a message to every online user from a specific user
+// unless the user has quiet mode enabled
 // TODO: unless the specific user has been blocked
 void shout_command(User *user, char** user_inputs, int num_words) {
     // user input can only be 100
@@ -215,7 +216,7 @@ void shout_command(User *user, char** user_inputs, int num_words) {
 
     User *ptr = user_head;
     while (ptr != NULL) {
-        if (ptr->status == USER_ONLINE_STATUS) {
+        if (ptr->status == USER_ONLINE_STATUS && ptr->quiet == 0) {
             write_message(ptr->client_fd, message);
         }
 		ptr = ptr->next;
@@ -262,4 +263,11 @@ void tell_command(User *user, char *user_name, char** user_inputs, int num_words
 	}
     free(recepient_message);
     free(sender_message);
+}
+
+// A player in the quiet mode does not receive any broadcast messages (from shout and kibitz), but
+// should receive personal message (tell and mail).
+// quiet == 0 is the default value
+void change_quiet_command(User *user, int new_quiet_value) {
+    user->quiet = new_quiet_value;
 }
