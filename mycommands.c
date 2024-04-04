@@ -16,9 +16,9 @@ char *help_command() {
     // remove them as we implement the commands
     char* RETURNED_STRING = 
     "\nCommands supported:\n"
-    "  #who                     # List all online users\n"
+    "  who                     # List all online users\n"
     "  stats [name]            # Display user information\n"
-    "  #game                    # list all current games\n"
+    "  game                    # list all current games\n"
     "  #observe <game_num>      # Observe a game\n"
     "  #unobserve               # Unobserve a game\n"
     "  #match <name> <b|w> [t]  # Try to start a game\n"
@@ -37,7 +37,7 @@ char *help_command() {
     "  #readmail <msg_num>      # Read the particular mail\n"
     "  #deletemail <msg_num>    # Delete the particular mail\n"
     "  #mail <id> <title>       # Send id a mail\n"
-    "  #info <msg>              # change your information to <msg>\n"
+    "  info <msg>              # change your information to <msg>\n"
     "  passwd <new>            # change password\n"
     "  exit                    # quit the system\n"
     "  quit                    # quit the system\n"
@@ -138,6 +138,7 @@ void stats_command(int client_fd, char *username) {
             );
 
         write_message(client_fd, message);
+        free(message);
     }
 }
 
@@ -150,6 +151,49 @@ void info_command(User *user, char** user_inputs, int num_words) {
         fprintf(stderr, "Out of memory when trying to change the password.\n");
         return;
     }
+}
+
+// lists all online users
+void who_command(int client_fd) {
+    // first count the number of users
+    User *ptr = user_head;
+    int numOnlineUsers = 0;
+	while (ptr != NULL) {
+        if (ptr->status == USER_ONLINE_STATUS) {
+		    numOnlineUsers += 1;
+        }
+		ptr = ptr->next;
+	}
+
+    // username can be 100 (maximum of 20 users)
+    // 50 for some buffer
+    char* message = (char*)malloc((100 * numOnlineUsers) + 50);
+    char* combinedOnlineUsernames = (char*)malloc((100 * numOnlineUsers) + 50);
+
+    strcpy(message, "");
+    strcpy(combinedOnlineUsernames, "");
+
+
+    ptr = user_head;
+    while (ptr != NULL) {
+        if (ptr->status == USER_ONLINE_STATUS) {
+            strcat(combinedOnlineUsernames, ptr->username);
+            strcat(combinedOnlineUsernames, " ");
+        }
+		ptr = ptr->next;
+	}
+
+    sprintf(
+        message,
+        "Total %d user(s) online:\n"
+        "%s\n",
+        numOnlineUsers,
+        combinedOnlineUsernames
+        );
+
+    write_message(client_fd, message);
+    free(message);
+    free(combinedOnlineUsernames);
 }
 
 // this changes the password for a given user

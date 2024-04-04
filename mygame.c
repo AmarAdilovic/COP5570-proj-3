@@ -206,7 +206,7 @@ char *print_games() {
         ptr = ptr->next;
     }
 
-    sprintf(ret_val, "Totals %d game(s):\n", count);
+    sprintf(ret_val, "Total %d game(s):\n", count);
 
     // Print details of each game
     ptr = game_head;

@@ -127,6 +127,7 @@ void register_command(int, TempUser *, char *, char *);
 void change_password_command(User *, char *);
 void stats_command(int, char *);
 void info_command(User *, char**, int);
+void who_command(int);
 
 /* prototypes from messages.c */
 char *initial_messsage(void);
