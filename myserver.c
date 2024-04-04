@@ -703,13 +703,14 @@ int main(int argc, char * argv[])
 							// match command
 							if (numWords != 3 && numWords != 4) {
 								write_message(client[i], "match <name> <b|w> [t]\n");
+								write_user_message_format(found_user, client[i]);
 							} else {
 								opponent = find_user_with_name(userInputs[1]); 
 								if (opponent == NULL) {
 									write_message(client[i], "User not exist!\n");
 									write_user_message_format(found_user, client[i]);
 								} else if (strcmp(opponent->username, found_user->username) == 0) {
-									write_message(client[i], "You cannot have a match with yourself.");
+									write_message(client[i], "You cannot have a match with yourself.\n");
 									write_user_message_format(found_user, client[i]);
 								} else if (opponent->status == 0) {
 									write_message(client[i], "User is not online\n");
@@ -723,9 +724,11 @@ int main(int argc, char * argv[])
 									if (numWords == 4) {
 										time = atoi(userInputs[3]);
 									} 
+									printf("DEBUG: time %d\n ", time);
 									piece = userInputs[2][0];
 									// check if request exist
 									check_flag = check_request(found_user->username, opponent->username, piece, time);
+									printf("DEBUG: check_flag %d\n ", check_flag);
 									if (check_flag == 0) {
 										// new request
 										create_request(found_user->username, opponent->username, piece, time);
@@ -736,9 +739,10 @@ int main(int argc, char * argv[])
 											piece = 'w';
 										}
 
-										sprintf(temp, "%s invite your for a game <match %s %c %d>", found_user->username, found_user->username, piece, time);
-
+										sprintf(temp, "%s invite your for a game <match %s %c %d>\n", found_user->username, found_user->username, piece, time);
 										write_message(opponent->client_fd, temp);
+										write_user_message_format(found_user, found_user->client_fd);
+										write_user_message_format(opponent, opponent->client_fd);
 									} else if (check_flag == 1) {
 										// request exist and all information match
 
@@ -759,7 +763,7 @@ int main(int argc, char * argv[])
 											// send board to both user
 											write_message(opponent->client_fd, user_temp_str);
 											write_message(found_user->client_fd, user_temp_str);
-											write_user_message_format(found_user, opponent->client_fd);
+											write_user_message_format(opponent, opponent->client_fd);
 											write_user_message_format(found_user, found_user->client_fd);
 											// free the board string
 											free(user_temp_str);
@@ -775,7 +779,7 @@ int main(int argc, char * argv[])
 										sprintf(temp,"%s; %s.\n", get_request(opponent->username, found_user->username), get_request(found_user->username, opponent->username));
 										write_message(opponent->client_fd, temp);
 										write_message(found_user->client_fd, temp);
-										write_user_message_format(found_user, opponent->client_fd);
+										write_user_message_format(opponent, opponent->client_fd);
 										write_user_message_format(found_user, found_user->client_fd);
 									}
 								}
