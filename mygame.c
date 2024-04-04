@@ -29,16 +29,16 @@ void refresh_time(Game *ptr) {
 }
 
 /*
-Game *find_game(char *user1, char *user2): find the existing game with given username of user1 and user2 as 
+Game *find_game(char *user1, char *user2): find the existing game with given username of user as 
 argument. Return the pointer to the game and return NULL if not found
 */
 
-Game *find_game(char *user1, char *user2) {
+Game *find_game(char *user) {
     // pointer to head
     Game *ptr = game_head;
     // Find the game
     while (ptr != NULL) {
-        if ((strcmp(ptr->black, user1) == 0 && strcmp(ptr->white, user2)) == 0 || (strcmp(ptr->black, user2) == 0 && strcmp(ptr->white, user1) == 0))
+        if (strcmp(ptr->black, user) == 0 || strcmp(ptr->white, user) == 0)
             return ptr;
         ptr = ptr->next;
     }   

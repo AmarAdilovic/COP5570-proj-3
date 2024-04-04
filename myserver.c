@@ -440,6 +440,133 @@ int close_user_connection(User *exitting_user, int client_fd, fd_set *allset) {
 	return close_client_connection(client_fd, allset);
 }
 
+/*
+void observer_update(Game *cur_game, char *str): update new message to all observers in the game
+*/
+void observer_update(Game *cur_game, char *str) {
+	Observer *cur = cur_game->observer_head;
+
+	while (cur != NULL) {
+		write_message(cur->user->client_fd, str);
+		cur = cur->next;
+	}
+}
+
+void move_game(User *user, char* player_move) {
+	User *opponent;
+	Game *cur_game;
+	int piece = 1;
+	int result = 0;
+	char *temp;
+	cur_game = find_game(user->username);
+	
+	if (cur_game == NULL) {
+		// palyer not in game
+		write_message(user->client_fd, "Command not supported.\n");
+		write_user_message_format(user, user->client_fd);
+		return;
+	}
+
+	// check what side current user in
+	if (strcmp(user->username, cur_game->black) == 0) {
+		piece = 2;
+	}
+
+	// check if this is user turn
+	if (piece != who_move(cur_game)) {
+		// not player turn
+		write_message(user->client_fd, "Not your turn!\n");
+		write_user_message_format(user, user->client_fd);
+	} else {
+		result = move(player_move, cur_game);
+		temp = print_board(cur_game);
+		write_message(user->client_fd, temp);
+		write_message(opponent->client_fd, temp);
+		observer_update(cur_game, temp);
+		free(temp);
+		if (result == -1) {
+            write_message(user->client_fd, "Place is already taken \n");
+			write_user_message_format(user, user->client_fd);
+        } else if (result == -2) {
+            write_message(user->client_fd, "Input is not in right format \n");
+			write_user_message_format(user, user->client_fd);
+        } else if (result == 1) {
+            write_message(user->client_fd, "white win \n");
+			write_user_message_format(user, user->client_fd);
+			write_message(opponent->client_fd, "white win \n");
+			write_user_message_format(opponent, opponent->client_fd);
+			observer_update(cur_game, "white win \n");
+			if (piece == 1) {
+				// user is white
+				user->win_match++;
+				opponent->loss_match++;
+			} else {
+				// user is black
+				user->loss_match++;
+				opponent->win_match++;;
+			}
+        } else if (result == 2) {
+            write_message(user->client_fd, "Black win \n");
+			write_user_message_format(user, user->client_fd);
+			write_message(opponent->client_fd, "Black win \n");
+			write_user_message_format(opponent, opponent->client_fd);
+			if (piece == 1) {
+				// user is white
+				user->loss_match++;
+				opponent->win_match++;
+			} else {
+				// user is black
+				user->win_match++;
+				opponent->loss_match++;
+			}
+			observer_update(cur_game, "Black win \n");
+        } else if (result == 3) {
+            write_message(user->client_fd, "Draw\n");
+			write_user_message_format(user, user->client_fd);
+			write_message(opponent->client_fd, "Draw \n");
+			write_user_message_format(opponent, opponent->client_fd);
+			observer_update(cur_game, "Draw \n");
+			user->draw_match++;
+			opponent->draw_match++;
+        } else if (result == 4) {
+            write_message(user->client_fd, "white win because black out of time \n");
+			write_user_message_format(user, user->client_fd);
+			write_message(opponent->client_fd, "white win because black out of time \n");
+			write_user_message_format(opponent, opponent->client_fd);
+			observer_update(cur_game, "white win because black out of time \n");
+			if (piece == 1) {
+				// user is white
+				user->win_match++;
+				opponent->loss_match++;
+			} else {
+				// user is black
+				user->loss_match++;
+				opponent->win_match++;
+			}
+        } else if (result == 5) {
+            write_message(user->client_fd, "black win because white out of time \n");
+			write_user_message_format(user, user->client_fd);
+			write_message(opponent->client_fd, "black win because white out of time \n");
+			write_user_message_format(opponent, opponent->client_fd);
+			observer_update(cur_game, "black win because white out of time \n");
+			if (piece == 1) {
+				// user is white
+				user->loss_match++;
+				opponent->win_match++;
+			} else {
+				// user is black
+				user->win_match++;
+				opponent->loss_match++;
+			}
+        }
+
+		if (result > 0) {
+			delete_game(cur_game);
+		}
+	}
+	
+}
+
 void sig_chld(int signo)
 {
 	pid_t pid;
@@ -730,6 +857,13 @@ int main(int argc, char * argv[])
 								write_message(client[i], "match <name> <b|w> [t]\n");
 								write_user_message_format(found_user, client[i]);
 							} else {
+								game_ptr = find_game(found_user->username);
+								if (game_ptr != NULL) {
+									// a game under player name is currently play
+									write_message(client[i], "Please finish a game before starting a new one \n");
+									write_user_message_format(found_user, client[i]);
+									continue;
+								}
 								opponent = find_user_with_name(userInputs[1]); 
 								if (opponent == NULL) {
 									write_message(client[i], "User not exist!\n");
@@ -764,7 +898,7 @@ int main(int argc, char * argv[])
 											piece = 'w';
 										}
 
-										sprintf(temp, "%s invite your for a game <match %s %c %d>\n", found_user->username, found_user->username, piece, time);
+										sprintf(temp, "%s invite you for a game <match %s %c %d>\n", found_user->username, found_user->username, piece, time);
 										write_message(opponent->client_fd, temp);
 										write_user_message_format(found_user, found_user->client_fd);
 										write_user_message_format(opponent, opponent->client_fd);
@@ -809,6 +943,10 @@ int main(int argc, char * argv[])
 									}
 								}
 							}
+						}
+						else if ((userInput[0] == 'A' || userInput[0] == 'B' || userInput[0] == 'C') && (userInput[1] == '1' || userInput[1] == '2' || userInput[1] == '3')) {
+							// move command
+							move_game(found_user, userInput);
 						}
 						else if (strcmp(userInput, "passwd") == 0) {
 							// if the user only enters "passwd"
