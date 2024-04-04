@@ -707,12 +707,16 @@ int main(int argc, char * argv[])
 								opponent = find_user_with_name(userInputs[1]); 
 								if (opponent == NULL) {
 									write_message(client[i], "User not exist!\n");
+									write_user_message_format(found_user, client[i]);
 								} else if (strcmp(opponent->username, found_user->username) == 0) {
 									write_message(client[i], "You cannot have a match with yourself.");
+									write_user_message_format(found_user, client[i]);
 								} else if (opponent->status == 0) {
 									write_message(client[i], "User is not online\n");
+									write_user_message_format(found_user, client[i]);
 								} else if (userInputs[2][0] != 'b' && userInputs[2][0] != 'w') {
-									write_message(client[i], "Not valid b/w\n");
+									write_user_message_format(found_user, client[i]);
+									continue;
 								} else {
 									// TODO: check if the last argument is number or not
 									time = 600;
@@ -755,6 +759,8 @@ int main(int argc, char * argv[])
 											// send board to both user
 											write_message(opponent->client_fd, user_temp_str);
 											write_message(found_user->client_fd, user_temp_str);
+											write_user_message_format(found_user, opponent->client_fd);
+											write_user_message_format(found_user, found_user->client_fd);
 											// free the board string
 											free(user_temp_str);
 										}
@@ -766,13 +772,14 @@ int main(int argc, char * argv[])
 										create_request(found_user->username, opponent->username, piece, time);
 										
 										// print Warning string to user
-										sprintf(temp,"%s; %s.", get_request(opponent->username, found_user->username), get_request(found_user->username, opponent->username));
+										sprintf(temp,"%s; %s.\n", get_request(opponent->username, found_user->username), get_request(found_user->username, opponent->username));
 										write_message(opponent->client_fd, temp);
 										write_message(found_user->client_fd, temp);
+										write_user_message_format(found_user, opponent->client_fd);
+										write_user_message_format(found_user, found_user->client_fd);
 									}
 								}
 							}
-							write_user_message_format(found_user, client[i]);
 						}
 						else if (strcmp(userInput, "passwd") == 0) {
 							// if the user only enters "passwd"

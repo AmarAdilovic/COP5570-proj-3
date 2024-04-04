@@ -448,8 +448,11 @@ char *print_board(Game *ptr) {
         }
         if (i != 2)
             ret_val[count++] = '\n';
-        else
+        else {
+            ret_val[count++] = '\n';
+            ret_val[count++] = '\n';
             ret_val[count] = '\0'; /* end of string */
+        }
     }
 
     // concat stat and board
