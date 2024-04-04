@@ -465,6 +465,7 @@ void observer_update(Game *cur_game, char *str) {
 
 	while (cur != NULL) {
 		write_message(cur->user->client_fd, str);
+		write_user_message_format(cur->user, cur->user->client_fd);
 		cur = cur->next;
 	}
 }
