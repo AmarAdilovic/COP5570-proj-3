@@ -92,11 +92,20 @@ typedef struct game_block {
     struct game_block *next;
 } Game;
 
+typedef struct game_request {
+    char *from;
+    char *to;
+    char bw;
+    int time;
+    struct game_request *next;
+} Request;
+
 /* Global */
 extern User *user_head;
 extern Game *game_head;
 extern TempUser *temp_user_head;
 extern TempMail *temp_mail_head;
+extern Request *request_head;
 
 /* Flag related */
 
@@ -150,5 +159,10 @@ TempMail *create_temp_mail(char *, char *, char *);
 int add_message(char *, char *, char *);
 int sendTempMail(char *, char *);
 
+/* prototypes from myrequest.c */
+int delete_request(char *, char *);
+int create_request(char *, char *, char , int );
+int check_request(char *, char *, char , int);
+char *get_request(char *, char *);
 
 #endif
