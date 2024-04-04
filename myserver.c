@@ -490,6 +490,12 @@ void move_game(User *user, char* player_move) {
 		piece = 2;
 	}
 
+	// set opponent
+	opponent = find_user_with_name(cur_game->black);
+	if (piece == 2) {
+		opponent = find_user_with_name(cur_game->white);
+	}
+
 	// check if this is user turn
 	if (piece != who_move(cur_game)) {
 		// not player turn
@@ -498,9 +504,12 @@ void move_game(User *user, char* player_move) {
 	} else {
 		result = move(player_move, cur_game);
 		temp = print_board(cur_game);
+
+		// print board for players and observers
 		write_message(user->client_fd, temp);
 		write_message(opponent->client_fd, temp);
 		observer_update(cur_game, temp);
+
 		free(temp);
 		if (result == -1) {
             write_message(user->client_fd, "Place is already taken \n");
@@ -576,7 +585,10 @@ void move_game(User *user, char* player_move) {
 				user->win_match++;
 				opponent->loss_match++;
 			}
-        }
+        } else {
+			write_user_message_format(opponent, opponent->client_fd);
+			write_user_message_format(user, user->client_fd);
+		}
 
 		if (result > 0) {
 			delete_game(cur_game);
@@ -584,6 +596,147 @@ void move_game(User *user, char* player_move) {
 	}
 	
 }
+
+/*
+void observe_command(User *user, char *num) add observer to the game num 
+*/
+void observe_command(User *user, char *num) {
+	char *ptr, *temp;
+	int count = 0;
+	Game *game_ptr = game_head;
+	
+	// check to see if num legit
+	ptr = num;
+	while (*ptr != '\0') {
+		if (*ptr < '0' || *ptr > '9') {
+			write_message(user->client_fd, "invalid command! \n");
+			write_user_message_format(user, user->client_fd);
+			return;
+		}
+		ptr++;
+	}
+
+	// check to see if game exist
+	while (game_ptr != NULL) {
+		if (count == atoi(num)) {
+			break;
+		}
+		game_ptr = game_ptr->next;
+	}
+
+	if (game_ptr == NULL) {
+		write_message(user->client_fd, "game not exist \n");
+		write_user_message_format(user, user->client_fd);
+		return;
+	}
+
+	// check to see if user already observe the game
+	if (check_observer(game_ptr, user->username) == 0) {
+		write_message(user->client_fd, "You are already observe the game \n");
+		write_user_message_format(user, user->client_fd);
+		return;
+	} 
+
+	// add observer
+	add_observer(game_ptr, user);
+
+	// print out the board
+	temp = print_board(game_ptr);
+	write_message(user->client_fd, temp);
+	write_user_message_format(user, user->client_fd);
+	free(temp);
+}
+
+/*
+void unobserve_command(User *user): unobserve game this user watch
+*/
+void unobserve_command(User *user) {
+	Game *game_ptr = game_head;
+	char *temp;
+	int count = 0;
+
+	temp = (char*) malloc(100*sizeof(char)); 
+	while (game_ptr != NULL) {
+		if (check_observer(game_ptr, user->username) == 0) {
+			sprintf(temp, "Unobserving game %d\n", count);
+			write_message(user->client_fd, temp);
+			count++;
+		}
+		game_ptr = game_ptr->next;
+	}
+
+	if (count == 0) {
+		write_message(user->client_fd, "You are not observing anything.\n");
+	}
+	write_user_message_format(user, user->client_fd);
+	free(temp);
+}
+
+/*
+void refresh_board(User *user): update board for current user
+*/
+
+void refresh_board(User *user) {
+	Game *game_ptr;
+	char *temp;
+
+	// player
+	game_ptr = find_game(user->username); 
+	if (game_ptr != NULL) {
+		temp = print_board(game_ptr);
+		write_message(user->client_fd, temp);
+		free(temp);
+	}
+
+	// observer
+	game_ptr = game_head;
+	while (game_ptr != NULL) {
+		if (check_observer(game_ptr, user->username) == 0) {
+			temp = print_board(game_ptr);
+			write_message(user->client_fd, temp);
+			free(temp);
+		}
+	}
+	write_user_message_format(user, user->client_fd);	
+}
+
+/*
+void resign(User *user) player resign
+*/
+void resign(User *user) {
+	Game *game_ptr;
+	char *temp;
+	User *black, *white;
+
+
+	temp = (char*) malloc(100*sizeof(char)); 
+	// player
+	game_ptr = find_game(user->username); 
+	if (game_ptr != NULL) {
+		black = find_user_with_name(game_ptr->black);
+		white = find_user_with_name(game_ptr->white);
+		sprintf(temp, "%s resign\n", user->username);
+		write_message(black->client_fd, temp);
+		write_message(white->client_fd, temp);
+		write_user_message_format(black, black->client_fd);	
+		write_user_message_format(white, white->client_fd);	
+		observer_update(game_ptr, temp);
+		user->loss_match++;
+		if (strcmp(black->username, user->username) == 0) {
+			//change stats
+			white->win_match++;
+		} else {
+			black->win_match++;
+		}
+		free(temp);
+		// delete game
+		delete_game(game_ptr);
+	} else {
+		write_message(user->client_fd, "You are not in any game!");
+		write_user_message_format(user, user->client_fd);	
+	}
+}
+
 
 void sig_chld(int signo)
 {
@@ -950,11 +1103,11 @@ int main(int argc, char * argv[])
 										write_user_message_format(opponent, opponent->client_fd);
 									} else if (check_flag == 1) {
 										// request exist and all information match
-
+										printf("Debug: before delete request\n");
 										// delete request
 										delete_request_user(opponent->username);
 										delete_request_user(found_user->username);
-
+										printf("Debug: After delete request\n");
 										// create game
 										if (piece == 'b') {
 											// create game
@@ -965,14 +1118,25 @@ int main(int argc, char * argv[])
 												printf("Error: not found board!");
 												return 1;
 											}
-											// send board to both user
-											write_message(opponent->client_fd, user_temp_str);
-											write_message(found_user->client_fd, user_temp_str);
-											write_user_message_format(opponent, opponent->client_fd);
-											write_user_message_format(found_user, found_user->client_fd);
-											// free the board string
-											free(user_temp_str);
+											
+										} else {
+											// create game
+											game_ptr = create_game(opponent->username, found_user->username, time);
+											// get board
+											user_temp_str = print_board(game_ptr);
+											if (user_temp_str == NULL) {
+												printf("Error: not found board!");
+												return 1;
+											}
 										}
+
+										// send board to both user
+										write_message(opponent->client_fd, user_temp_str);
+										write_message(found_user->client_fd, user_temp_str);
+										write_user_message_format(opponent, opponent->client_fd);
+										write_user_message_format(found_user, found_user->client_fd);
+										// free the board string
+										free(user_temp_str);
 
 									} else {
 										// the detail of game is different 
@@ -993,6 +1157,22 @@ int main(int argc, char * argv[])
 						else if ((userInput[0] == 'A' || userInput[0] == 'B' || userInput[0] == 'C') && (userInput[1] == '1' || userInput[1] == '2' || userInput[1] == '3')) {
 							// move command
 							move_game(found_user, userInput);
+						}
+						else if (strcmp(userInput, "observe") == 0) {
+							// observe command
+							observe_command(found_user, userInputs[1]);
+						}
+						else if (strcmp(userInput, "unobserve") == 0) {
+							// unobserve command
+							unobserve_command(found_user);
+						}
+						else if (strcmp(userInput, "refresh") == 0) {
+							// refresh
+							refresh_board(found_user);
+						}
+						else if (strcmp(userInput, "resign") == 0) {
+							// resign
+							resign(found_user);
 						}
 						else if (strcmp(userInput, "passwd") == 0) {
 							// if the user only enters "passwd"
