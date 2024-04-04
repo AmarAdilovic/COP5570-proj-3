@@ -164,5 +164,7 @@ int delete_request(char *, char *);
 int create_request(char *, char *, char , int );
 int check_request(char *, char *, char , int);
 char *get_request(char *, char *);
+int delete_request_user(char *);
+Request *find_request(char *, char *);
 
 #endif

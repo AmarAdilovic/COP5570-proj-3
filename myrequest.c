@@ -137,7 +137,7 @@ int check_request(char *from, char *to, char bw, int time) {
 
     while (ptr != NULL) {
         if (strcmp(ptr->from, to) == 0 && strcmp(ptr->to, from) == 0) {
-            if (ptr->bw == bw && ptr->time == time)
+            if (ptr->bw != bw && ptr->time == time)
                 return 1;
             else 
                 return 2;
@@ -147,6 +147,22 @@ int check_request(char *from, char *to, char bw, int time) {
 
     return 0;
 
+}
+
+/*
+Request *find_request(char *from, char *to): return the request with given from and to, NULL if not found
+*/
+Request *find_request(char *from, char *to) {
+    Request *ptr = request_head;
+
+    while (ptr != NULL) {
+        if (strcmp(ptr->from, from) == 0 && strcmp(ptr->to, to) == 0) {
+            return ptr;
+        }
+        ptr = ptr->next;
+    }
+
+    return NULL;
 }
 
 /*
