@@ -66,14 +66,14 @@ char *decrypt(char *str) {
 
 /*
 TODO: Change this function if have time
-void serialize_block(FILE *file, Blocked_user *cur): save block users to given file
+void serialize_block(FILE *file, BlockedUser *cur): save block users to given file
 ${block_users}$
 Block_users: name, 
 */
-void serialize_block(FILE *file, Blocked_user *cur) {
+void serialize_block(FILE *file, BlockedUser *cur) {
     fprintf(file, "${");
     for (; cur != NULL; cur = cur->next) {
-        // save blocked_user username
+        // save BlockedUser username
         fprintf(file, "%s, ", cur->username);
     }
     fprintf(file, "}$");
