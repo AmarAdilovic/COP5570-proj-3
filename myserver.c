@@ -312,6 +312,19 @@ TempUser *find_temp_user_with_fd(int client_fd) {
 	return NULL;
 }
 
+int count_online_users() {
+    User *ptr = user_head;
+    int numOnlineUsers = 0;
+	while (ptr != NULL) {
+        if (ptr->status == USER_ONLINE_STATUS) {
+		    numOnlineUsers += 1;
+        }
+		ptr = ptr->next;
+	}
+
+    return numOnlineUsers;
+}
+
 /*
 TempUser *free_temp_user(TempUser *temp_user_pointer): free the TempUser
 */
@@ -692,6 +705,18 @@ int main(int argc, char * argv[])
 						}
 						else if (strcmp(userInput, "who") == 0) {
 							who_command(client[i]);
+							write_user_message_format(found_user, client[i]);
+						}
+						else if (strcmp(userInput, "shout") == 0) {
+							// if the user only enters "shout"
+							if (numWords == 1) {
+								shout_command(found_user,  (char **)"", 0);
+							}
+							// if the user enters "shout ANY STRING"
+							else {
+								shout_command(found_user, userInputs, numWords);
+							}
+
 							write_user_message_format(found_user, client[i]);
 						}
 						else if (strcmp(userInput, "game") == 0) {

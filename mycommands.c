@@ -155,15 +155,7 @@ void info_command(User *user, char** user_inputs, int num_words) {
 
 // lists all online users
 void who_command(int client_fd) {
-    // first count the number of users
-    User *ptr = user_head;
-    int numOnlineUsers = 0;
-	while (ptr != NULL) {
-        if (ptr->status == USER_ONLINE_STATUS) {
-		    numOnlineUsers += 1;
-        }
-		ptr = ptr->next;
-	}
+    int numOnlineUsers = count_online_users();
 
     // username can be 100 (maximum of 20 users)
     // 50 for some buffer
@@ -173,8 +165,7 @@ void who_command(int client_fd) {
     strcpy(message, "");
     strcpy(combinedOnlineUsernames, "");
 
-
-    ptr = user_head;
+    User *ptr = user_head;
     while (ptr != NULL) {
         if (ptr->status == USER_ONLINE_STATUS) {
             strcat(combinedOnlineUsernames, ptr->username);
@@ -203,4 +194,30 @@ void change_password_command(User *user, char *new_password) {
         fprintf(stderr, "Out of memory when trying to change the password.\n");
         return;
     }
+}
+
+// sends a message to every online user from a specific user
+// TODO: unless the specific user has been blocked
+void shout_command(User *user, char** user_inputs, int num_words) {
+    // user input can only be 100
+    // username can maximum be 100
+    // 50 for some buffer
+    char* message = (char*)malloc(100 + 100 + 50);
+    char* combined = (num_words == 0) ? "\n" : combineUserInputs(user_inputs, num_words);
+
+    strcpy(message, "");
+    sprintf(
+        message,
+        "!shout! *%s*: %s\n",
+        user->username,
+        combined
+        );
+
+    User *ptr = user_head;
+    while (ptr != NULL) {
+        if (ptr->status == USER_ONLINE_STATUS) {
+            write_message(ptr->client_fd, message);
+        }
+		ptr = ptr->next;
+	}
 }
