@@ -129,6 +129,7 @@ User *find_user_with_name(char *);
 void write_message(int, char *);
 void write_temp_user_message_format(TempUser *, int);
 char* combineUserInputs(char**, int);
+int count_online_users();
 
 /* prototypes from mycommands.c */
 char *help_command(void);
@@ -137,6 +138,7 @@ void change_password_command(User *, char *);
 void stats_command(int, char *);
 void info_command(User *, char**, int);
 void who_command(int);
+void shout_command(User *, char**, int);
 
 /* prototypes from messages.c */
 char *initial_messsage(void);
