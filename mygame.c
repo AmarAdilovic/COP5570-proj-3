@@ -253,6 +253,22 @@ int add_observer(Game *game, User *user) {
 }
 
 /*
+int check_observer(Game *game, char *username): check to see if observer exist or not. 0 if exist, 1 if not
+*/
+int check_observer(Game *game, char *username) {
+    // pointer to head
+    Observer *ptr = game->observer_head;
+
+    while (ptr != NULL) {
+        if (strcmp(ptr->user->username, username) == 0)
+            return 0;
+        ptr = ptr->next;
+    }
+
+    return 1;
+}
+
+/*
 void delete_observer(Game *game, User *user): delete observer from the game 
 NOTE: before using this function, MUST check that user is an observer in the game
 use for unobserve command

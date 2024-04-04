@@ -121,6 +121,7 @@ void delete_observer(Game *, User *);
 int move(char *, Game *);
 char *print_board(Game *);
 int isWin(Game *);
+int check_observer(Game *, char *);
 
 
 /* prototypes from myserver.c */
