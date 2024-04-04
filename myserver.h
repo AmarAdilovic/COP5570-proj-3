@@ -141,6 +141,7 @@ void info_command(User *, char**, int);
 void who_command(int);
 void shout_command(User *, char**, int);
 void tell_command(User *,  char *, char **, int);
+void change_quiet_command(User *, int);
 
 /* prototypes from messages.c */
 char *initial_messsage(void);

@@ -754,6 +754,16 @@ int main(int argc, char * argv[])
 
 							write_user_message_format(found_user, client[i]);
 						}
+						else if (strcmp(userInput, "quiet") == 0) {
+							change_quiet_command(found_user, 1);
+							write_message(client[i], "Enter quiet mode.\n");
+							write_user_message_format(found_user, client[i]);
+						}
+						else if (strcmp(userInput, "nonquiet") == 0) {
+							change_quiet_command(found_user, 0);
+							write_message(client[i], "Enter nonquiet mode.\n");
+							write_user_message_format(found_user, client[i]);
+						}
 						else if (strcmp(userInput, "game") == 0) {
 							// TODO: test after the game-related functions are implemented
 							write_message(client[i], print_games());
