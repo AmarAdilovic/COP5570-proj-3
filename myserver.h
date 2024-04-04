@@ -112,7 +112,7 @@ extern Request *request_head;
 
 /* prototypes from game.c */
 int who_move(Game *);
-Game *find_game(char *, char *);
+Game *find_game(char *);
 Game *create_game(char *, char *, int);
 void delete_game(Game *);
 int add_observer(Game *, User *);
