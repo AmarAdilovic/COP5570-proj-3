@@ -683,6 +683,15 @@ int main(int argc, char * argv[])
 							write_message(client[i], "Please use a guest login to register new users.\n");
 							write_user_message_format(found_user, client[i]);
 						}
+						else if (strcmp(userInput, "who") == 0) {
+							who_command(client[i]);
+							write_user_message_format(found_user, client[i]);
+						}
+						else if (strcmp(userInput, "game") == 0) {
+							// TODO: test after the game-related functions are implemented
+							write_message(client[i], print_games());
+							write_user_message_format(found_user, client[i]);
+						}
 						else if (strcmp(userInput, "passwd") == 0) {
 							// if the user only enters "passwd"
 							if (numWords == 1) {
