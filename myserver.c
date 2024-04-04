@@ -731,7 +731,9 @@ int main(int argc, char * argv[])
 										} else {
 											piece = 'w';
 										}
+
 										sprintf(temp, "%s invite your for a game <match %s %c %d>", found_user->username, found_user->username, piece, time);
+
 										write_message(opponent->client_fd, temp);
 									} else if (check_flag == 1) {
 										// request exist and all information match
