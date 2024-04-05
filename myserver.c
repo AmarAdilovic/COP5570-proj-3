@@ -510,10 +510,73 @@ int close_client_connection(int client_fd, fd_set *allset) {
 	return -1;
 }
 
+
+/*
+void disconnect_lost(User *user): will check if there is any game the given user is play,
+if yes, resign from the game, change players' status.
+*/
+void disconnect_lose(User *user) {
+	Game *game_ptr;
+	Observer *cur;
+	User *opponent;
+	char *temp;
+	game_ptr = find_game(user->username);
+
+	// check if game exit
+	if (game_ptr == NULL) {
+		return;
+	} 
+
+	cur = game_ptr->observer_head;
+	temp = (char*) malloc(100*sizeof(char)); 
+	// set opponent
+	if (strcmp(game_ptr->black, user->username) == 0) {
+		opponent = find_user_with_name(game_ptr->white);
+	} else {
+		opponent = find_user_with_name(game_ptr->black);
+	}
+
+	// update player status
+	opponent->win_match++;
+	user->loss_match++;
+
+	// create message 
+	sprintf(temp, "%s lose due to disconnected!\n");
+
+	// notify all the observer
+	while (cur != NULL) {
+		write_message(cur->user->client_fd, temp);
+		write_user_message_format(cur->user, cur->user->client_fd);
+		cur = cur->next;
+	}
+
+	// let the opponent know
+	write_message(opponent->client_fd, temp);
+	write_user_message_format(opponent, opponent->client_fd);
+
+	// delete the game
+	delete_game(game_ptr);
+}
+
 int close_user_connection(User *exitting_user, int client_fd, fd_set *allset) {
+	Game *game_ptr;
 	exitting_user->status = USER_OFFLINE_STATUS;
 	// we want to reset the message number
 	exitting_user->message_num = 0;
+
+	// disconnect the user and make user lose the game
+	disconnect_lose(exitting_user);
+
+	// delete all user request
+	delete_request_user(exitting_user->username);
+
+	// delete user from all the observe game
+	for (game_ptr = game_head; game_ptr != NULL; game_ptr = game_ptr->next) {
+		if (check_observer(game_ptr, exitting_user->username) == 0) {
+			delete_observer(game_ptr, exitting_user);
+		} 
+	}
+
 	return close_client_connection(client_fd, allset);
 }
 
@@ -750,7 +813,7 @@ void refresh_board(User *user) {
 }
 
 /*
-void resign(User *user) player resign
+void resign(User *user) player resign 
 */
 void resign(User *user) {
 	Game *game_ptr;
