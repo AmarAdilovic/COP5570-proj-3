@@ -19,24 +19,24 @@ char *help_command() {
     "  who                     # List all online users\n"
     "  stats [name]            # Display user information\n"
     "  game                    # list all current games\n"
-    "  #observe <game_num>      # Observe a game\n"
-    "  #unobserve               # Unobserve a game\n"
-    "  #match <name> <b|w> [t]  # Try to start a game\n"
-    "  #<A|B|C><1|2|3>          # Make a move in a game\n"
-    "  #resign                  # Resign a game\n"
-    "  #refresh                 # Refresh a game\n"
+    "  observe <game_num>      # Observe a game\n"
+    "  unobserve               # Unobserve a game\n"
+    "  match <name> <b|w> [t]  # Try to start a game\n"
+    "  <A|B|C><1|2|3>          # Make a move in a game\n"
+    "  resign                  # Resign a game\n"
+    "  refresh                 # Refresh a game\n"
     "  shout <msg>             # shout <msg> to every one online\n"
     "  tell <name> <msg>       # tell user <name> message\n"
-    "  #kibitz <msg>            # Comment on a game when observing\n"
+    "  kibitz <msg>            # Comment on a game when observing\n"
     "  #' <msg>                 # Comment on a game\n"
     "  quiet                   # Quiet mode, no broadcast messages\n"
     "  nonquiet                # Non-quiet mode\n"
     "  block <id>              # No more communication from <id>\n"
     "  unblock <id>            # Allow communication from <id>\n"
-    "  #listmail                # List the header of the mails\n"
-    "  #readmail <msg_num>      # Read the particular mail\n"
-    "  #deletemail <msg_num>    # Delete the particular mail\n"
-    "  #mail <id> <title>       # Send id a mail\n"
+    "  listmail                # List the header of the mails\n"
+    "  readmail <msg_num>      # Read the particular mail\n"
+    "  deletemail <msg_num>    # Delete the particular mail\n"
+    "  mail <id> <title>       # Send id a mail\n"
     "  info <msg>              # change your information to <msg>\n"
     "  passwd <new>            # change password\n"
     "  exit                    # quit the system\n"
@@ -263,6 +263,7 @@ void kibitz_command(User *user, char** user_inputs, int num_words) {
     Game *game_ptr = game_head;
     Observer *observer_ptr;
     User *ptr;
+	int count = 0;
 
     char* message = (char*)malloc(100 + 100 + 50);
     char* combined = (num_words == 0) ? "\n" : combineUserInputs(user_inputs, num_words);
@@ -277,6 +278,7 @@ void kibitz_command(User *user, char** user_inputs, int num_words) {
 
     for (; game_ptr != NULL; game_ptr = game_ptr->next) {
         if (check_observer(game_ptr, user->username) == 0) {
+            count++;
             for (observer_ptr = game_ptr->observer_head; observer_ptr != NULL; observer_ptr = observer_ptr->next) {
                 ptr = observer_ptr->user;
                 BlockedUser *found_blocked_user = find_blocked_user_with_name(user->username, ptr->block_head);
@@ -287,6 +289,9 @@ void kibitz_command(User *user, char** user_inputs, int num_words) {
         }
     }
     free(message);
+    if (count == 0) {
+		write_message(user->client_fd, "You are not observing any game.\n");
+	}
 }
 
 // sends a message to a specific online user from a specific user, unless the specific user has been blocked

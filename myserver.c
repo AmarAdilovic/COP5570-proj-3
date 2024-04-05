@@ -426,11 +426,7 @@ void free_temp_user(TempUser *temp_user_pointer) {
 
 
     // free allocated memory in temp_user_pointer
-	/*
     free(temp_user_pointer->username);
-	if (temp_user_pointer->password != NULL)
-    	free(temp_user_pointer->password);
-	*/
 	printf("exit free temp user\n");
 }
 
@@ -502,8 +498,9 @@ void log_user_in(User *found_user_by_name, int client_fd) {
 	write_message(client_fd, welcome_message());
 	// display the help command
 	write_message(client_fd, help_command());
-	// TODO: Check for unread messages here
-	// write_message(client[i], guest_user_message());
+	// check for unread messages here
+	write_message(client_fd, unread_messages(found_user_by_name));
+
 	write_user_message_format(found_user_by_name, client_fd);
 }
 
@@ -858,14 +855,26 @@ void resign(User *user) {
 void process_mail_title(User *user, char **userInputs, int len): create temp mail
 */
 
-void process_mail_title(User *user, char **userInputs, int len) {
-	char *to, *title;
+void process_mail_title(User *user, char *to, char **userInputs, int len) {
+	User *found_user = find_user_with_name(to);
 
-	to = userInputs[1];
-	title = combineUserInputs(userInputs, len);
+    if (found_user == NULL) {
+		// username can be 100
+		// 50 for some buffer
+		char* message = (char*)malloc(100 + 20);
+		strcpy(message, "");
+		sprintf( message, "%s is not a user.\n", to );
+		write_message(user->client_fd, message);
+		free(message);
+		write_user_message_format(user, user->client_fd);
+        return;
+    }
+
+	char *title = combineUserInputs(userInputs, len);
+	printf("MAIL Title, %s\n", title);
 	create_temp_mail(user->username, to, title);
 	user->status = 2; // writing email;
-	write_message(user->client_fd, "\n\n\n");
+	write_message(user->client_fd, "Please input mail body, finishing with '.' at the beginning of a line\n\n");
 }
 
 
@@ -1145,8 +1154,7 @@ int main(int argc, char * argv[])
 								// end of mail, send messsage
 								sendTempMail(found_user->username);
 
-								// notify user that they have new mail
-								write_message(client[i], "You have new email!\n");
+								write_message(client[i], "Message sent\n");
 								write_user_message_format(found_user, client[i]);
 
 								// change status to 1
@@ -1198,11 +1206,11 @@ int main(int argc, char * argv[])
 							write_user_message_format(found_user, client[i]);
 						}
 						else if (strcmp(userInput, "kibitz") == 0 || strcmp(userInput, "'") == 0) {
-							// if the user only enters "shout"
+							// if the user only enters "kibitz"
 							if (numWords == 1) {
 								kibitz_command(found_user,  (char **)"", 0);
 							}
-							// if the user enters "shout ANY STRING"
+							// if the user enters "kibitz ANY STRING"
 							else {
 								kibitz_command(found_user, userInputs, numWords);
 							}
@@ -1385,37 +1393,44 @@ int main(int argc, char * argv[])
 							if (numWords < 3) {
 								write_message(client[i], "invalid command, should look like this 'mail <id> <title>'\n");
 								write_user_message_format(found_user, client[i]);
-							} else {
-								process_mail_title(found_user, userInputs, numWords - 1);
+							}
+							// if the user enters "mail USERNAME ANY STRING"
+							else {
+								char *userName = userInputs[1];
+								removeFirstWords(userInputs, numWords, 1);
+								process_mail_title(found_user, userName, userInputs, (numWords - 1));
 							}
 						}
 						else if (strcmp(userInput, "listmail") == 0) {
 							// list mail
-							user_temp_str = listmail(found_user->username);
-							write_message(client[i], user_temp_str);
+							write_message(client[i], listmail(found_user->username));
 							write_user_message_format(found_user, client[i]);
-							free(user_temp_str);
 						} 
 						else if (strcmp(userInput, "readmail") == 0) {
-							// read mail
-							// check to see if num legit
-							user_temp_str = userInputs[1];
-							check_flag = 0;
-							while (*user_temp_str != '\0') {
-								if (*user_temp_str < '0' || *user_temp_str > '9') {
-									write_message(found_user->client_fd, "invalid command! \n");
-									write_user_message_format(found_user, found_user->client_fd);
-									check_flag = 1;
-									break;
-								}
-								user_temp_str++;
+							// only "readmail" has been called, by default try and access the first mail
+							if (numWords == 1) {
+									write_message(client[i], readmail(found_user, 0));
+									write_user_message_format(found_user, client[i]);
 							}
-							// read mail
-							if (check_flag == 0) {
-								user_temp_str = readmail(found_user->username, atoi(userInputs[1]));
-								write_message(client[i], user_temp_str);
-								write_user_message_format(found_user, client[i]);
-								free(user_temp_str);
+							// user input is "readmail SOMETHING"
+							else {	
+								// check to see if num legit
+								user_temp_str = userInputs[1];
+								check_flag = 0;
+								while (*user_temp_str != '\0') {
+									if (*user_temp_str < '0' || *user_temp_str > '9') {
+										write_message(found_user->client_fd, "invalid command! \n");
+										write_user_message_format(found_user, found_user->client_fd);
+										check_flag = 1;
+										break;
+									}
+									user_temp_str++;
+								}
+								// read mail
+								if (check_flag == 0) {
+									write_message(client[i], readmail(found_user, atoi(userInputs[1])));
+									write_user_message_format(found_user, client[i]);
+								}
 							}
 						}
 						else if (strcmp(userInput, "deletemail") == 0) {
@@ -1425,7 +1440,7 @@ int main(int argc, char * argv[])
 							check_flag = 0;
 							while (*user_temp_str != '\0') {
 								if (*user_temp_str < '0' || *user_temp_str > '9') {
-									write_message(found_user->client_fd, "invalid command! \n");
+									write_message(found_user->client_fd, "Usage: deletemail <msg_num>\n");
 									write_user_message_format(found_user, found_user->client_fd);
 									check_flag = 1;
 									break;

@@ -165,12 +165,13 @@ void deserialize(char *);
 
 /* prototypes from mymail.c */
 char *listmail(char *);
-char *readmail(char *, int);
+char *readmail(User *, int);
 char *deletemail(char *, int);
 int createmail(char *, char *, char *, char *);
 TempMail *create_temp_mail(char *, char *, char *);
 int add_message(char *, char *);
 int sendTempMail(char *);
+char *unread_messages(User *);
 
 /* prototypes from myrequest.c */
 int delete_request(char *, char *);
