@@ -88,7 +88,8 @@ int delete_request(char *from, char *to) {
 int create_request(char *from, char *to, char bw, int time): create a request for the game return 
 0 if success, return 1 if the other player is offline, 2 if player is not exist, -1 otherwise
 */
-int create_request(char *from, char *to, char bw, int time) {
+int create_request(char *from, char *to, char *bw, int time) {
+    printf("DEBUG: create_request %s %s %s %d\n ", from, to, bw, time);
     User *player2;
     Request *ptr = request_head;
     Request **ptr_ptr = &request_head;
@@ -128,7 +129,13 @@ int create_request(char *from, char *to, char bw, int time) {
         fprintf(stderr, "Out of memory when using create_request function\n");
         return -1;
     }
-    ptr->bw = bw;
+
+    ptr->bw = strdup(bw);
+    if (ptr->bw == NULL) {
+        fprintf(stderr, "Out of memory when using create_request function\n");
+        return -1;
+    }
+
     ptr->time = time;
 
     ptr->next = NULL;
@@ -142,12 +149,12 @@ the other side. Return 0 if not, 1 if is all information are correct, 2 if infor
 is not aligned
 */
 
-int check_request(char *from, char *to, char bw, int time) {
+int check_request(char *from, char *to, char *bw, int time) {
     Request *ptr = request_head;
 
     while (ptr != NULL) {
         if (strcmp(ptr->from, to) == 0 && strcmp(ptr->to, from) == 0) {
-            if (ptr->bw != bw && ptr->time == time)
+            if (strcmp(ptr->bw, bw) != 0 && ptr->time == time)
                 return 1;
             else 
                 return 2;
@@ -187,7 +194,7 @@ char *get_request(char *from, char *to) {
 
     while (ptr != NULL) {
         if (strcmp(ptr->from, from) == 0 && strcmp(ptr->to, to) == 0) {
-            sprintf(ret_val, "%s wants <match %s %c %d>", ptr->from, ptr->to, ptr->bw, ptr->time);
+            sprintf(ret_val, "%s wants <match %s %s %d>", ptr->from, ptr->to, ptr->bw, ptr->time);
             return ret_val;
         }
         ptr = ptr->next;

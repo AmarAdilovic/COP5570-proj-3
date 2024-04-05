@@ -415,7 +415,7 @@ char *print_board(Game *ptr) {
     int i, j, size, count, ret_val_size;
     char row;
     size = 45;
-    ret_val_size = 160;
+    ret_val_size = 162;
     char *ret_val, *str_ret_val;
 
     // reset_time
@@ -423,7 +423,7 @@ char *print_board(Game *ptr) {
     
     // Print stat
     str_ret_val = (char*) malloc(ret_val_size*sizeof(char));
-    sprintf(str_ret_val, "Black:%15s       White:%15s\n Time:%15d        Time:%15d\n\n", ptr->black, ptr->white, (int) ptr->time_left_black, (int) ptr->time_left_white);
+    sprintf(str_ret_val, "\nBlack:%15s       White:%15s\n Time:%15d        Time:%15d\n\n", ptr->black, ptr->white, (int) ptr->time_left_black, (int) ptr->time_left_white);
     /* TODO remember to free() the string after printout to client */
 
     // Print board

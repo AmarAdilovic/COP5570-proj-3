@@ -96,7 +96,7 @@ typedef struct game_block {
 typedef struct game_request {
     char *from;
     char *to;
-    char bw;
+    char *bw;
     int time;
     struct game_request *next;
 } Request;
@@ -174,8 +174,8 @@ int sendTempMail(char *);
 
 /* prototypes from myrequest.c */
 int delete_request(char *, char *);
-int create_request(char *, char *, char , int );
-int check_request(char *, char *, char , int);
+int create_request(char *, char *, char *, int );
+int check_request(char *, char *, char *, int);
 char *get_request(char *, char *);
 int delete_request_user(char *);
 Request *find_request(char *, char *);
