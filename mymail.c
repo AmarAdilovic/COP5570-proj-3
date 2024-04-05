@@ -48,7 +48,7 @@ char *listmail(char *username) {
             } else {
                 s = 'R';
             }
-            sprintf(temp, "%3d%3c%12s\"%40s\"   %s\n", count, s, cur->username, cur->title, asctime (timeinfo));
+            sprintf(temp, "%3d%3c%12s      \"%s\"   %s\n", count, s, cur->username, cur->title, asctime (timeinfo));
             strcat(ret_val, temp);
             count++;
         }
@@ -59,17 +59,15 @@ char *listmail(char *username) {
 }
 
 /*
-char *readmail(char *username, int num): read the #num mail of given username and return the result
+char *readmail(User *user, int num): read the #num mail of given username and return the result
 */
-char *readmail(char *username, int num) {
+char *readmail(User *user, int num) {
     int count;
     char *ret_val;
-    User *user;
     Mail *cur;
     struct tm * timeinfo;
 
     ret_val = (char*) malloc(1200*sizeof(char));
-    user = find_user_with_name(username);
     cur = user->mail_head;
     count = 0;
 
@@ -88,6 +86,39 @@ char *readmail(char *username, int num) {
 
     sprintf(ret_val, "Message number invalid\n");
     return ret_val;
+}
+
+/*
+char *unread_messages(User *user, int num): read the #num mail of given username and return the result
+*/
+char *unread_messages(User *user) {
+    char *message = (char*) malloc(100*sizeof(char));
+    strcpy(message, "");
+
+    Mail *mail_head = user->mail_head;
+
+    int count = 0;
+
+    // find email
+    while (mail_head != NULL) {
+        // check for unread mails
+        if (mail_head->status == 0) {
+            count++;
+        }
+        mail_head = mail_head->next;
+    }
+
+    if (count == 0) {
+        sprintf(message, "You have no unread messages.\n");
+    }
+    else if (count == 1) {
+        sprintf(message, "You have 1 unread message.\n");
+    }
+    else if (count > 1) {
+        sprintf(message, "You have %d unread messages.\n", count);
+    }
+
+    return message;
 }
 
 /*
@@ -151,7 +182,7 @@ char *deletemail(char *username, int num) {
 
 /*
 int createmail(char *username, char *from, char *title, char *message): create a new email and add that to usename mailbox
-TODO: work on notify user about new email after create a new email. Return 0 if success, 1 otherwise
+Return 0 if success, 1 otherwise
 */
 int createmail(char *username, char *from, char *title, char *message) {
     User *user;
@@ -160,6 +191,9 @@ int createmail(char *username, char *from, char *title, char *message) {
 
 
     user = find_user_with_name(username);
+    if (user == NULL) {
+        return 1;
+    }
     ptr = user->mail_head; // pointer to head
     ptr_ptr = &user->mail_head; // pointer to pointer of head
 
@@ -177,8 +211,7 @@ int createmail(char *username, char *from, char *title, char *message) {
     }
 
     ptr->username = strdup(from);
-    ptr->title = strdup(title);
-    if (ptr->title == NULL) {
+    if (ptr->username == NULL) {
         fprintf(stderr, "Out of memory in the createmail function during from setup\n");
         free(ptr);
         return 1;
@@ -192,7 +225,7 @@ int createmail(char *username, char *from, char *title, char *message) {
     }
 
     ptr->message = strdup(message);
-    if (ptr->title == NULL) {
+    if (ptr->message == NULL) {
         fprintf(stderr, "Out of memory in the createmail function during message setup\n");
         free(ptr);
         return 1;
@@ -202,6 +235,11 @@ int createmail(char *username, char *from, char *title, char *message) {
     time(&(ptr->date));
     // set status to not read or 0
     ptr->status = 0;
+
+    if (user->status == 1) {
+        write_message(user->client_fd, "A new message just arrived.\n");
+    }
+
     ptr->next = NULL;
     *ptr_ptr = ptr;
     return 0;
@@ -251,8 +289,8 @@ TempMail *create_temp_mail(char *from, char *to, char *title) {
     if (ptr->message == NULL) {
         fprintf(stderr, "Out of memory when using create_temp_mail function at message\n");
         return NULL;
-    } 
-    sprintf(ptr->message, " ");
+    }
+    strcpy(ptr->message, "");
     ptr->next = NULL;
     *ptr_ptr = ptr;
     return ptr;
@@ -283,7 +321,6 @@ int add_message(char *from, char *m) {
 /*
 int sendTempMail(char *from, char *to): this function is called when user click . and new line
 in the message. 0 if success send the email, 1 otherwise
-TODO: notify user about new mail after calling this function
 */
 int sendTempMail(char *from) {
     TempMail *cur;
@@ -319,6 +356,7 @@ int sendTempMail(char *from) {
     }
 
     ret_val = createmail(ptr->to, ptr->from, ptr->title, ptr->message);
+
     free(ptr->to);
     free(ptr->from);
     free(ptr->title);
@@ -326,8 +364,3 @@ int sendTempMail(char *from) {
     free(ptr);
     return ret_val;
 }
-
-
-
-
-
