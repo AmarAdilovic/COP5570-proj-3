@@ -259,18 +259,19 @@ TempMail *create_temp_mail(char *from, char *to, char *title) {
 }
 
 /*
-int add_message(char *from, char *to, char *m): add new line of message to temp message
+int add_message(char *from, char *m): add new line of message to temp message
 return 0 if success, -1 if temp message not found, 1 otherwise
 */
-int add_message(char *from, char *to, char *m) {
+int add_message(char *from, char *m) {
     TempMail *ptr = temp_mail_head;
 
     // find the message
     while (ptr != NULL) {
-        if (strcmp(ptr->from, from) == 0 && strcmp(ptr->to,to) == 0) {
+        if (strcmp(ptr->from, from) == 0) {
             // found the message
             // add new message to current message
             strcat(ptr->message, m);
+            strcat(ptr->message, "\n");
         }
         ptr = ptr->next;
     }
@@ -284,7 +285,7 @@ int sendTempMail(char *from, char *to): this function is called when user click 
 in the message. 0 if success send the email, 1 otherwise
 TODO: notify user about new mail after calling this function
 */
-int sendTempMail(char *from, char *to) {
+int sendTempMail(char *from) {
     TempMail *cur;
     TempMail *ptr = temp_mail_head;
     cur = ptr;
@@ -296,13 +297,13 @@ int sendTempMail(char *from, char *to) {
 
     // find the message
     // if the message is at the beggining of linkedlist
-    if (strcmp(ptr->from, from) == 0 && strcmp(ptr->to,to) == 0) {
+    if (strcmp(ptr->from, from) == 0) {
         // delete the node from linkedlist
         temp_mail_head = temp_mail_head->next;
     }
 
     while (ptr != NULL) {
-        if (strcmp(ptr->from, from) == 0 && strcmp(ptr->to,to) == 0) {
+        if (strcmp(ptr->from, from) == 0) {
             // found the message
             // delete the node from linkedlist
             cur->next = ptr->next;

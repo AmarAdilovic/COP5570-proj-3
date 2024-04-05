@@ -51,6 +51,7 @@ typedef struct user_block {
     /*
     0 is nonquiet (default value),
     1 is quiet mode,
+    2 is writting email
     */
     int quiet;
     BlockedUser* block_head; /* head of linked list of block users */
@@ -167,8 +168,8 @@ char *readmail(char *, int);
 char *deletemail(char *, int);
 int createmail(char *, char *, char *, char *);
 TempMail *create_temp_mail(char *, char *, char *);
-int add_message(char *, char *, char *);
-int sendTempMail(char *, char *);
+int add_message(char *, char *);
+int sendTempMail(char *);
 
 /* prototypes from myrequest.c */
 int delete_request(char *, char *);
