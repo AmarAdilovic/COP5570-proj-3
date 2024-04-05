@@ -797,6 +797,20 @@ void resign(User *user) {
 	}
 }
 
+/*
+void process_mail_title(User *user, char **userInputs, int len): create temp mail
+*/
+
+void process_mail_title(User *user, char **userInputs, int len) {
+	char *to, *title;
+
+	to = userInputs[1];
+	title = combineUserInputs(userInputs, len);
+	create_temp_mail(user->username, to, title);
+	user->status = 2; // writing email;
+	write_message(user->client_fd, "\n\n\n");
+}
+
 
 void sig_chld(int signo)
 {
@@ -1053,7 +1067,22 @@ int main(int argc, char * argv[])
 						printf("found_user.username = %s, client = %d.\n", found_user->username, client[i]);
 
 						// we need to listen to all commands
-						if (strcmp(userInput, "help") == 0 || strcmp(userInput, "?") == 0) {
+						if (found_user->status == 2) {
+							if (strcmp(trimmedString, ".") == 0) {
+								// end of mail, send messsage
+								sendTempMail(found_user->username);
+
+								// notify user that they have new mail
+								write_message(client[i], "You have new email!\n");
+								write_user_message_format(found_user, client[i]);
+
+								// change status to 1
+								found_user->status = 1;
+							} else {
+								add_message(found_user->username, trimmedString);
+							}
+						}
+						else if (strcmp(userInput, "help") == 0 || strcmp(userInput, "?") == 0) {
 							write_message(client[i], help_command());
 							write_user_message_format(found_user, client[i]);
 						}
@@ -1258,6 +1287,66 @@ int main(int argc, char * argv[])
 						else if (strcmp(userInput, "resign") == 0) {
 							// resign
 							resign(found_user);
+						}
+						else if (strcmp(userInput, "mail") == 0) {
+							// mail
+							if (numWords < 3) {
+								write_message(client[i], "invalid command, should look like this 'mail <id> <title>'\n");
+								write_user_message_format(found_user, client[i]);
+							} else {
+								process_mail_title(found_user, userInputs, numWords - 1);
+							}
+						}
+						else if (strcmp(userInput, "listmail") == 0) {
+							// list mail
+							user_temp_str = listmail(found_user->username);
+							write_message(client[i], user_temp_str);
+							write_user_message_format(found_user, client[i]);
+							free(user_temp_str);
+						} 
+						else if (strcmp(userInput, "readmail") == 0) {
+							// read mail
+							// check to see if num legit
+							user_temp_str = userInputs[1];
+							check_flag = 0;
+							while (*user_temp_str != '\0') {
+								if (*user_temp_str < '0' || *user_temp_str > '9') {
+									write_message(found_user->client_fd, "invalid command! \n");
+									write_user_message_format(found_user, found_user->client_fd);
+									check_flag = 1;
+									break;
+								}
+								user_temp_str++;
+							}
+							// read mail
+							if (check_flag == 0) {
+								user_temp_str = readmail(found_user->username, atoi(userInputs[1]));
+								write_message(client[i], user_temp_str);
+								write_user_message_format(found_user, client[i]);
+								free(user_temp_str);
+							}
+						}
+						else if (strcmp(userInput, "deletemail") == 0) {
+							// delete mail
+							// check to see if num legit
+							user_temp_str = userInputs[1];
+							check_flag = 0;
+							while (*user_temp_str != '\0') {
+								if (*user_temp_str < '0' || *user_temp_str > '9') {
+									write_message(found_user->client_fd, "invalid command! \n");
+									write_user_message_format(found_user, found_user->client_fd);
+									check_flag = 1;
+									break;
+								}
+								user_temp_str++;
+							}
+							// delete mail
+							if (check_flag == 0) {
+								user_temp_str = deletemail(found_user->username, atoi(userInputs[1]));
+								write_message(client[i], user_temp_str);
+								write_user_message_format(found_user, client[i]);
+								free(user_temp_str);
+							}
 						}
 						else if (strcmp(userInput, "passwd") == 0) {
 							// if the user only enters "passwd"
