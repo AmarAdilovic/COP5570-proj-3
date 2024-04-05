@@ -531,6 +531,7 @@ void observer_update(Game *cur_game, char *str) {
 }
 
 void move_game(User *user, char* player_move) {
+	printf("DEBUG: move_game %s %s", user->username, player_move);
 	User *opponent;
 	Game *cur_game;
 	int piece = 1;
@@ -563,14 +564,18 @@ void move_game(User *user, char* player_move) {
 		write_user_message_format(user, user->client_fd);
 	} else {
 		result = move(player_move, cur_game);
-		temp = print_board(cur_game);
+		// if the move is invalid, we do not need to print the board
+		if (result > -1) {
+			temp = print_board(cur_game);
 
-		// print board for players and observers
-		write_message(user->client_fd, temp);
-		write_message(opponent->client_fd, temp);
-		observer_update(cur_game, temp);
+			// print board for players and observers
+			write_message(user->client_fd, temp);
+			write_message(opponent->client_fd, temp);
+			observer_update(cur_game, temp);
 
-		free(temp);
+			free(temp);
+		}
+
 		if (result == -1) {
             write_message(user->client_fd, "Place is already taken \n");
 			write_user_message_format(user, user->client_fd);
@@ -661,20 +666,8 @@ void move_game(User *user, char* player_move) {
 void observe_command(User *user, char *num) add observer to the game num 
 */
 void observe_command(User *user, char *num) {
-	char *ptr, *temp;
 	int count = 0;
 	Game *game_ptr = game_head;
-	
-	// check to see if num legit
-	ptr = num;
-	while (*ptr != '\0') {
-		if (*ptr < '0' || *ptr > '9') {
-			write_message(user->client_fd, "invalid command! \n");
-			write_user_message_format(user, user->client_fd);
-			return;
-		}
-		ptr++;
-	}
 
 	// check to see if game exist
 	while (game_ptr != NULL) {
@@ -701,10 +694,8 @@ void observe_command(User *user, char *num) {
 	add_observer(game_ptr, user);
 
 	// print out the board
-	temp = print_board(game_ptr);
-	write_message(user->client_fd, temp);
+	write_message(user->client_fd, print_board(game_ptr));
 	write_user_message_format(user, user->client_fd);
-	free(temp);
 }
 
 /*
@@ -719,6 +710,7 @@ void unobserve_command(User *user) {
 	while (game_ptr != NULL) {
 		if (check_observer(game_ptr, user->username) == 0) {
 			sprintf(temp, "Unobserving game %d\n", count);
+			delete_observer(game_ptr, user);
 			write_message(user->client_fd, temp);
 			count++;
 		}
@@ -738,25 +730,22 @@ void refresh_board(User *user): update board for current user
 
 void refresh_board(User *user) {
 	Game *game_ptr;
-	char *temp;
 
 	// player
 	game_ptr = find_game(user->username); 
 	if (game_ptr != NULL) {
-		temp = print_board(game_ptr);
-		write_message(user->client_fd, temp);
-		free(temp);
+		write_message(user->client_fd, print_board(game_ptr));
 	}
 
 	// observer
 	game_ptr = game_head;
 	while (game_ptr != NULL) {
 		if (check_observer(game_ptr, user->username) == 0) {
-			temp = print_board(game_ptr);
-			write_message(user->client_fd, temp);
-			free(temp);
+			write_message(user->client_fd, print_board(game_ptr));
 		}
+		game_ptr = game_ptr->next;
 	}
+
 	write_user_message_format(user, user->client_fd);	
 }
 
@@ -775,7 +764,7 @@ void resign(User *user) {
 	if (game_ptr != NULL) {
 		black = find_user_with_name(game_ptr->black);
 		white = find_user_with_name(game_ptr->white);
-		sprintf(temp, "%s resign\n", user->username);
+		sprintf(temp, "%s resigned\n", user->username);
 		write_message(black->client_fd, temp);
 		write_message(white->client_fd, temp);
 		write_user_message_format(black, black->client_fd);	
@@ -792,7 +781,7 @@ void resign(User *user) {
 		// delete game
 		delete_game(game_ptr);
 	} else {
-		write_message(user->client_fd, "You are not in any game!");
+		write_message(user->client_fd, "You can't resign without playing a game.\n");
 		write_user_message_format(user, user->client_fd);	
 	}
 }
@@ -820,7 +809,7 @@ int main(int argc, char * argv[])
 	fd_set allset, rset;	
 	int maxfd, time, check_flag;
 	User *opponent;
-	char piece;
+	char *piece;
 	char *temp, *user_temp_str; // temp is an allocate space DO NOT FREE, user_temp_str is pointer
 	Game *game_ptr;
 
@@ -1137,20 +1126,20 @@ int main(int argc, char * argv[])
 						}
 						else if (strcmp(userInput, "match") == 0) {
 							// match command
-							if (numWords != 3 && numWords != 4) {
+							if (numWords != 2 && numWords != 3 && numWords != 4) {
 								write_message(client[i], "match <name> <b|w> [t]\n");
 								write_user_message_format(found_user, client[i]);
 							} else {
 								game_ptr = find_game(found_user->username);
 								if (game_ptr != NULL) {
-									// a game under player name is currently play
+									// a game under player name is currently in play
 									write_message(client[i], "Please finish a game before starting a new one \n");
 									write_user_message_format(found_user, client[i]);
 									continue;
 								}
 								opponent = find_user_with_name(userInputs[1]); 
 								if (opponent == NULL) {
-									write_message(client[i], "User not exist!\n");
+									write_message(client[i], "User does not exist!\n");
 									write_user_message_format(found_user, client[i]);
 								} else if (strcmp(opponent->username, found_user->username) == 0) {
 									write_message(client[i], "You cannot have a match with yourself.\n");
@@ -1158,9 +1147,6 @@ int main(int argc, char * argv[])
 								} else if (opponent->status == 0) {
 									write_message(client[i], "User is not online\n");
 									write_user_message_format(found_user, client[i]);
-								} else if (userInputs[2][0] != 'b' && userInputs[2][0] != 'w') {
-									write_user_message_format(found_user, client[i]);
-									continue;
 								} else {
 									// TODO: check if the last argument is number or not
 									time = 600;
@@ -1168,7 +1154,13 @@ int main(int argc, char * argv[])
 										time = atoi(userInputs[3]);
 									} 
 									printf("DEBUG: time %d\n ", time);
-									piece = userInputs[2][0];
+									printf("DEBUG: userInputs[2] %s\n ", userInputs[2]);
+									if (userInputs[2] == NULL) {
+										piece = "b";
+									}
+									else {
+										piece = (strcmp(userInputs[2], "b") != 0 && strcmp(userInputs[2], "w") != 0) ? "b" : userInputs[2];
+									}
 									// check if request exist
 									check_flag = check_request(found_user->username, opponent->username, piece, time);
 									printf("DEBUG: check_flag %d\n ", check_flag);
@@ -1176,13 +1168,13 @@ int main(int argc, char * argv[])
 										// new request
 										create_request(found_user->username, opponent->username, piece, time);
 										// let other player know 
-										if (piece == 'w') {
-											piece = 'b';
+										if (strcmp(piece, "w") == 0) {
+											piece = "b";
 										} else {
-											piece = 'w';
+											piece = "w";
 										}
 
-										sprintf(temp, "%s invite you for a game <match %s %c %d>\n", found_user->username, found_user->username, piece, time);
+										sprintf(temp, "%s invite you for a game <match %s %s %d>\n", found_user->username, found_user->username, piece, time);
 										write_message(opponent->client_fd, temp);
 										write_user_message_format(found_user, found_user->client_fd);
 										write_user_message_format(opponent, opponent->client_fd);
@@ -1194,7 +1186,7 @@ int main(int argc, char * argv[])
 										delete_request_user(found_user->username);
 										printf("Debug: After delete request\n");
 										// create game
-										if (piece == 'b') {
+										if (strcmp(piece, "b") == 0) {
 											// create game
 											game_ptr = create_game(found_user->username, opponent->username, time);
 											// get board
@@ -1244,8 +1236,12 @@ int main(int argc, char * argv[])
 							move_game(found_user, userInput);
 						}
 						else if (strcmp(userInput, "observe") == 0) {
-							// observe command
-							observe_command(found_user, userInputs[1]);
+							if (numWords == 1) {
+								observe_command(found_user, "0");
+							}
+							else {
+								observe_command(found_user, userInputs[1]);
+							}
 						}
 						else if (strcmp(userInput, "unobserve") == 0) {
 							// unobserve command
