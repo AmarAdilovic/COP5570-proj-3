@@ -1124,6 +1124,18 @@ int main(int argc, char * argv[])
 
 							write_user_message_format(found_user, client[i]);
 						}
+						else if (strcmp(userInput, "kibitz") == 0 || strcmp(userInput, "'") == 0) {
+							// if the user only enters "shout"
+							if (numWords == 1) {
+								kibitz_command(found_user,  (char **)"", 0);
+							}
+							// if the user enters "shout ANY STRING"
+							else {
+								kibitz_command(found_user, userInputs, numWords);
+							}
+
+							write_user_message_format(found_user, client[i]);
+						}
 						else if (strcmp(userInput, "quiet") == 0) {
 							change_quiet_command(found_user, 1);
 							write_message(client[i], "Enter quiet mode.\n");

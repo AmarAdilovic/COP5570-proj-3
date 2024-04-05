@@ -149,6 +149,7 @@ void tell_command(User *,  char *, char **, int);
 void change_quiet_command(User *, int);
 void block_command(User *, char *);
 void unblock_command(User *, char *);
+void kibitz_command(User *, char**, int);
 
 /* prototypes from messages.c */
 char *initial_messsage(void);

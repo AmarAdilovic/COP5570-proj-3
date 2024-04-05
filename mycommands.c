@@ -254,6 +254,41 @@ void shout_command(User *user, char** user_inputs, int num_words) {
     free(message);
 }
 
+// sends a message to every observer in the game
+// unless the user has quiet mode enabled or the user shouting has been blocked
+void kibitz_command(User *user, char** user_inputs, int num_words) {
+    // user input can only be 100
+    // username can maximum be 100
+    // 50 for some buffer
+    Game *game_ptr = game_head;
+    Observer *observer_ptr;
+    User *ptr;
+
+    char* message = (char*)malloc(100 + 100 + 50);
+    char* combined = (num_words == 0) ? "\n" : combineUserInputs(user_inputs, num_words);
+
+    strcpy(message, "");
+    sprintf(
+        message,
+        "Kibitz* %s: %s\n",
+        user->username,
+        combined
+        );
+
+    for (; game_ptr != NULL; game_ptr = game_ptr->next) {
+        if (check_observer(game_ptr, user) == 0) {
+            for (observer_ptr = game_ptr->observer_head; observer_ptr != NULL; observer_ptr = observer_ptr->next) {
+                ptr = observer_ptr->user;
+                BlockedUser *found_blocked_user = find_blocked_user_with_name(user->username, ptr->block_head);
+                if (ptr->status == USER_ONLINE_STATUS && ptr->quiet == 0 && found_blocked_user == NULL) {
+                    write_message(ptr->client_fd, message);
+                }
+            } 
+        }
+    }
+    free(message);
+}
+
 // sends a message to a specific online user from a specific user, unless the specific user has been blocked
 void tell_command(User *user, char *user_name, char** user_inputs, int num_words) {
     // user input can only be 100
