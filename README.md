@@ -18,3 +18,15 @@ ctrl + c to kill server
 `gdb ./myserver`
 
 then `r PORT_NUM`
+
+## To run the GUI for the first time:
+
+### First run the back-end
+    - `cd gui/tic-tac-toe-backend`
+    - `npm install` 
+    - `node server.js TEL_NET_PORT_NUMBER`
+
+### Then run the front-end
+    - `cd gui/tic-tac-toe-gui`
+    - `npm install`
+    - `npm run dev`

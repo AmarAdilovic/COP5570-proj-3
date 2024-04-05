@@ -3,3 +3,8 @@ a.out
 myserver
 *.o
 .vscode/
+/gui/tic-tac-toe-backend/node_modules
+/gui/tic-tac-toe-backend/package-lock.json
+
+/gui/tic-tac-toe-gui/node_modules
+/gui/tic-tac-toe-gui/package-lock.json
