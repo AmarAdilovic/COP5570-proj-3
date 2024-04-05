@@ -28,6 +28,8 @@ char *encrypt(char *str) {
             sprintf(temp, "%d", str[i]);
         else 
             sprintf(temp, "%d|", str[i]);
+
+        printf("%s\n", temp);
             
         if (i == 0)
             sprintf(ret_val, "%s", temp);
@@ -178,6 +180,7 @@ void deserialize(char *file_name) {
     }
 
     while(fscanf(file, "%s %s %s %d %d %d", name, pwd, info, &win_match, &loss_match, &draw_match) > 0) {
+        printf("DEBUG: work inside scanf\n");
         // allocate memory for new user
         ptr = malloc(sizeof(User));
         if (ptr == NULL) {

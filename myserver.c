@@ -424,9 +424,14 @@ void free_temp_user(TempUser *temp_user_pointer) {
         cur->next = temp_user_pointer->next;
     }
 
+
     // free allocated memory in temp_user_pointer
+	/*
     free(temp_user_pointer->username);
-    free(temp_user_pointer->password);
+	if (temp_user_pointer->password != NULL)
+    	free(temp_user_pointer->password);
+	*/
+	printf("exit free temp user\n");
 }
 
 // writes a given string to the given client file descriptor
@@ -541,7 +546,7 @@ void disconnect_lose(User *user) {
 	user->loss_match++;
 
 	// create message 
-	sprintf(temp, "%s lose due to disconnected!\n");
+	sprintf(temp, "%s lose due to disconnected!\n", user->username);
 
 	// notify all the observer
 	while (cur != NULL) {
@@ -873,6 +878,13 @@ void sig_chld(int signo)
 	return ;
 }
 
+// Signal handler for SIGALRM
+void alarm_handler(int signal) {
+    serialize("backup.txt");
+    // Set another alarm for 5 minutes later
+    alarm(300); // 5 minutes = 300 seconds
+}
+
 /* 21. You can assume the maximum number of players online to have a reasonable limit (e.g. 20). */
 #define MAXCONN 20
 
@@ -891,6 +903,15 @@ int main(int argc, char * argv[])
 	Game *game_ptr;
 
 	temp = (char*) malloc(100*sizeof(char));
+
+	// Set the initial alarm for 5 minutes
+    alarm(300); // 5 minutes = 300 seconds
+
+    // Register the signal handler for SIGALRM
+    signal(SIGALRM, alarm_handler);
+
+	// Load user in the first place
+	deserialize("backup.txt");
 
 	abc.sa_handler = sig_chld;
 	sigemptyset(&abc.sa_mask);

@@ -276,7 +276,7 @@ void kibitz_command(User *user, char** user_inputs, int num_words) {
         );
 
     for (; game_ptr != NULL; game_ptr = game_ptr->next) {
-        if (check_observer(game_ptr, user) == 0) {
+        if (check_observer(game_ptr, user->username) == 0) {
             for (observer_ptr = game_ptr->observer_head; observer_ptr != NULL; observer_ptr = observer_ptr->next) {
                 ptr = observer_ptr->user;
                 BlockedUser *found_blocked_user = find_blocked_user_with_name(user->username, ptr->block_head);
