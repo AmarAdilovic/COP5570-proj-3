@@ -368,6 +368,7 @@ TempUser *find_temp_user_with_fd(int client_fd): find the existing TempUser usin
 the pointer to the TempUser object. return NULL if not found
 */
 TempUser *find_temp_user_with_fd(int client_fd) {
+	printf("Searching for temp users\n");
 	// pointer to head
     TempUser *ptr = temp_user_head;
 	while (ptr != NULL) {
@@ -406,6 +407,9 @@ int count_online_users() {
 TempUser *free_temp_user(TempUser *temp_user_pointer): free the TempUser
 */
 void free_temp_user(TempUser *temp_user_pointer) {
+	if (temp_user_pointer == NULL) {
+		return;
+	}
 	printf("Clearing the TempUser: %s\n", temp_user_pointer->username);
     // pointer to head
 	TempUser *cur = temp_user_head;
@@ -1136,6 +1140,7 @@ int main(int argc, char * argv[])
 									close_user_connection(found_user_by_name, found_user_by_name->client_fd, &allset);
 								}
 								log_user_in(found_user_by_name, client[i]);
+								free_temp_user(found_temp_user);
 							}
 							// otherwise, the password does not match
 							else {

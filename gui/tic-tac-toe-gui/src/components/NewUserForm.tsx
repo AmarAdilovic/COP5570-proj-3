@@ -82,7 +82,7 @@ export const NewUserForm: React.FC<NewUserFormProps> = ({
         setToastMessage("Error during login")
       }
     })
-  };
+  }
 
   return (
     <Dialog open={open}>

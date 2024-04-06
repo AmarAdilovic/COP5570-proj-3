@@ -4,6 +4,9 @@ const { Telnet } = require('telnet-client');
 const app = express();
 const port = 3000;
 const telnet_port_number = process.argv[2];
+let connection = new Telnet()
+let connectedToServer = false
+let resetConnection = false
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
@@ -17,41 +20,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// sends a command to the telnet server and receive a response
-// app.post('/api/telnet/register', async (req, res) => {
-//   console.log("Register request body: ", req.body);
-//   let connection = new Telnet();
-//   const params = {
-//     host: '0.0.0.0',
-//     port: telnet_port_number,
-//     negotiationMandatory: false,
-//     timeout: 15000,
-//   };
-
-//   try {
-//     connection.connect(params)
-//     .then(prompt => {
-//         console.log('Prompt from the connection.connect: ', prompt)
-//         // connection.exec(cmd)
-//         // .then(res => {
-//         //   console.log('promises result:', res)
-//         // })
-//       }, error => {
-//         console.log('promises reject:', error)
-//       })
-//       .catch(error => {
-//         console.error('connection.connect error:', error)
-//         // handle the throw (timeout)
-//       })
-//     res.json({ message: 'Success' })
-//   } catch (error) {
-//     console.error('Telnet error:', error)
-//     res.status(500).json({ message: 'Error communicating with telnet server', error })
-//   }
-// });
 
 app.post('/api/telnet/register', async (req, res) => {
     console.log("Register request body: ", req.body)
+
+    if (resetConnection) {
+        console.log("resetting the telnet connection")
+        connection = new Telnet()
+        resetConnection = false
+    }
 
     // to determine which errors should be thrown to the client
     // let loginFailed = false
@@ -59,11 +36,12 @@ app.post('/api/telnet/register', async (req, res) => {
     //  1 === login successful, 2 === registration successful
     let statusCode = 0
 
-    let connection = new Telnet()
     const params = {
       host: '0.0.0.0',
       port: telnet_port_number,
-      setTimeout: 0,
+      setTimeout: 20000,
+    //   loginPrompt: RegExp('/username \(guest\)[: ]*$/i'),
+    //   passwordPrompt: RegExp('/password:/i'),
       negotiationMandatory: false
     }
 
@@ -76,7 +54,7 @@ app.post('/api/telnet/register', async (req, res) => {
         await new Promise((resolve, reject) => {
             connection.on('ready', async function() {
                 console.log('Server "ready"\n')
-            });
+            })
         
             connection.on('timeout', function() {
                 console.log('socket timeout!')
@@ -139,10 +117,8 @@ app.post('/api/telnet/register', async (req, res) => {
                         connection.write(req.body.password + "\n")
                     }
                     else if (dataString.includes("Login failed!!") || dataString.includes("Thank you for using Online Tic-tac-toe Server")) {
-                        console.log('\nLogin failed, ending the connection\n')
+                        console.log('\nLogin failed\n')
 
-                        // loginFailed = true
-                        // connection.end()
                         reject(new Error("The passed in username and password failed to login."))
                     } else {
                         // You can only use 'register username password' as a guest
@@ -159,13 +135,16 @@ app.post('/api/telnet/register', async (req, res) => {
             })
             
             connection.on('connect', function() {
+                connectedToServer= true
                 console.log('Connected to the telnet server.')
             })
     
-            connection.connect(params).catch((error) => {
-                // Propagates connection error
-                reject(error)
-            })
+            if (!connectedToServer) {
+                connection.connect(params).catch((error) => {
+                    // Propagates connection error
+                    reject(error)
+                })
+            }
         })
   
         // If the promise resolves, send a successful response
@@ -174,6 +153,8 @@ app.post('/api/telnet/register', async (req, res) => {
         }
         else if (statusCode === 2) {
             res.json({ message: 'Successfully registered an account for the telnet server' })
+            connectedToServer = false
+            resetConnection = true
             connection.end()
         }
         else {
@@ -182,10 +163,43 @@ app.post('/api/telnet/register', async (req, res) => {
 
       } catch (error) {
         console.error('Telnet error:', error);
+        connectedToServer = false
+        resetConnection = true
         // Communicate back the error through the HTTP response
         res.status(500).json({ message: 'Error communicating with telnet server', error: error.message });
       }
 })
+
+
+// ASSUMES USER IS ALREADY LOGGED IN
+app.post('/api/telnet/command', async (req, res) => {
+    console.log("Register request body: ", req.body.command)
+
+    try {
+        connection.removeAllListeners()
+        console.log('connection eventName\n', connection.eventNames())
+        connection.write(req.body.command + "\n")
+        let dataString = ''
+        // connection logic wrapped in a Promise
+        await new Promise((resolve, reject) => {
+            connection.on('data', async function(data) {
+                dataString = data.toString()
+                console.log('Received data from the server:\n', dataString)
+                resolve()
+            })
+        })
+  
+        res.json({ message: dataString })
+    }
+    catch (error) {
+        console.error('Telnet error:', error);
+        connectedToServer = false
+        resetConnection = true
+        // Communicate back the error through the HTTP response
+        res.status(500).json({ message: 'Error communicating with telnet server', error: error.message });
+    }
+})
+
 
 
 // await connection.connect(params);
