@@ -6,6 +6,7 @@
 // user statuses
 #define USER_OFFLINE_STATUS 0
 #define USER_ONLINE_STATUS 1
+#define USER_ONLINE_STATUS_MAIL 2
 
 #define TEMP_USER_GUEST_STATUS 1
 #define TEMP_USER_ACTIVE_CONNECTION_PENDING_STATUS 2
@@ -172,6 +173,7 @@ TempMail *create_temp_mail(char *, char *, char *);
 int add_message(char *, char *);
 int sendTempMail(char *);
 char *unread_messages(User *);
+int createmail_backup(char *, char *, char *, char *, int , time_t );
 
 /* prototypes from myrequest.c */
 int delete_request(char *, char *);

@@ -894,6 +894,14 @@ void alarm_handler(int signal) {
     alarm(300); // 5 minutes = 300 seconds
 }
 
+void sig_alrm(int signo)
+{ 
+	// Back up every 5 minutes
+	serialize("backup.txt");
+	printf("Finish backing up \n");
+	alarm(600);
+}
+
 /* 21. You can assume the maximum number of players online to have a reasonable limit (e.g. 20). */
 #define MAXCONN 20
 
@@ -902,6 +910,7 @@ int main(int argc, char * argv[])
 	int sockfd, rec_sock, len, i;
 	struct sockaddr_in addr, recaddr;
 	struct sigaction abc;
+	struct sigaction act;
 	int client[MAXCONN];
 	char buf[100];
 	fd_set allset, rset;	
@@ -913,8 +922,7 @@ int main(int argc, char * argv[])
 
 	temp = (char*) malloc(100*sizeof(char));
 
-	// Set the initial alarm for 5 minutes
-    alarm(300); // 5 minutes = 300 seconds
+	
 
     // Register the signal handler for SIGALRM
     signal(SIGALRM, alarm_handler);
@@ -926,7 +934,13 @@ int main(int argc, char * argv[])
 	sigemptyset(&abc.sa_mask);
 	abc.sa_flags = 0;
 
+	act.sa_handler = sig_alrm;
+  	sigemptyset(&act.sa_mask);
+  	act.sa_flags = 0;
+
+  	sigaction(SIGALRM, &act, 0);
 	sigaction(SIGCHLD, &abc, NULL);
+	alarm(600);
 
 	if (argc < 2) {
 		printf("Usage: ./myserver PORT_NUMBER\n");

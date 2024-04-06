@@ -245,6 +245,71 @@ int createmail(char *username, char *from, char *title, char *message) {
     return 0;
 }
 
+/*
+int createmail(char *username, char *from, char *title, char *message): create a new email and add that to usename mailbox
+Return 0 if success, 1 otherwise 
+NOTE: use for backup
+*/
+int createmail_backup(char *username, char *from, char *title, char *message, int status, time_t date) {
+    User *user;
+    Mail *ptr;
+    Mail **ptr_ptr;
+
+
+    user = find_user_with_name(username);
+    if (user == NULL) {
+        return 1;
+    }
+    ptr = user->mail_head; // pointer to head
+    ptr_ptr = &user->mail_head; // pointer to pointer of head
+
+    // find a place to add new mail
+    while (ptr != NULL) {
+        ptr_ptr = &(ptr->next);
+        ptr = ptr->next;
+    }
+
+    // Allocate memory for new mail
+    ptr = malloc(sizeof(Mail));
+    if (ptr == NULL) {
+        fprintf(stderr, "Out of memory when using createmail function\n");
+        return 1;
+    }
+
+    ptr->username = strdup(from);
+    if (ptr->username == NULL) {
+        fprintf(stderr, "Out of memory in the createmail function during from setup\n");
+        free(ptr);
+        return 1;
+    }
+
+    ptr->title = strdup(title);
+    if (ptr->title == NULL) {
+        fprintf(stderr, "Out of memory in the createmail function during title setup\n");
+        free(ptr);
+        return 1;
+    }
+
+    ptr->message = strdup(message);
+    if (ptr->message == NULL) {
+        fprintf(stderr, "Out of memory in the createmail function during message setup\n");
+        free(ptr);
+        return 1;
+    }
+
+    // set the send time
+    ptr->status = status;
+    ptr->date = date;
+
+    if (user->status == 1) {
+        write_message(user->client_fd, "A new message just arrived.\n");
+    }
+
+    ptr->next = NULL;
+    *ptr_ptr = ptr;
+    return 0;
+}
+
 
 /*
 int create_temp_mail(char *from, char *to, char *title): create temporary mail so that the user can append message to mail block.
@@ -285,7 +350,7 @@ TempMail *create_temp_mail(char *from, char *to, char *title) {
         fprintf(stderr, "Out of memory when using create_temp_mail function\n");
         return NULL;
     } 
-    ptr->message = (char*) malloc(1000000*sizeof(char));
+    ptr->message = (char*) malloc(10000*sizeof(char));
     if (ptr->message == NULL) {
         fprintf(stderr, "Out of memory when using create_temp_mail function at message\n");
         return NULL;
