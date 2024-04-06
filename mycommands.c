@@ -197,7 +197,7 @@ void who_command(int client_fd) {
 
     User *ptr = user_head;
     while (ptr != NULL) {
-        if (ptr->status == USER_ONLINE_STATUS) {
+        if (ptr->status == USER_ONLINE_STATUS || ptr->status == USER_ONLINE_STATUS_MAIL) {
             strcat(combinedOnlineUsernames, ptr->username);
             strcat(combinedOnlineUsernames, " ");
         }
