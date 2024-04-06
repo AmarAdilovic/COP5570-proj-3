@@ -7,6 +7,8 @@ and should be called from myserver.c every 5 minutes using alarm
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "myserver.h"
 
 
@@ -16,7 +18,7 @@ char *encrypt(char *str): encrypt string into ascii and return the pointer to as
 char *encrypt(char *str) {
     char *ret_val, *temp;
     int i, len;
-    ret_val = (char*) malloc(10000*sizeof(char));
+    ret_val = (char*) malloc(30000*sizeof(char));
     if (ret_val == NULL) {
         fprintf(stderr, "Out of memory when using encrypt at backup\n");
         return NULL;
@@ -179,6 +181,10 @@ mails: ^(name, status, **(title)**, **(message)**)^,
 TODO: call this function from myserver.c every 5 minutes
 */
 void serialize(char *file_name) {
+
+    if (fork() != 0)
+        return; 
+    
     char *e_username, *e_pwd, *e_info, *e_mail, *e_block, *raw_mail, *raw_block;
     User *cur = user_head;
 
@@ -242,6 +248,7 @@ void serialize(char *file_name) {
     }
 
     fclose(file);
+    exit(0);
 }
 
 /*
@@ -261,7 +268,7 @@ void deserialize_mail(char *mail, char *username) {
 
     name = (char*) malloc(200*sizeof(char));
     title = (char*) malloc(200*sizeof(char));
-    message = (char*) malloc(1000000*sizeof(char));
+    message = (char*) malloc(1000*sizeof(char));
     while (sscanf(mail, "%s %s %s %d %li %n", name, title, message, &status, &date, &so_far) > 0) {
         mail += so_far;
         d_name = decrypt(name);
