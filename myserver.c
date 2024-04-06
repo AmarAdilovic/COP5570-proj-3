@@ -506,6 +506,9 @@ void log_user_in(User *found_user_by_name, int client_fd) {
 
 int close_client_connection(int client_fd, fd_set *allset) {
 	printf("Closing client %d connection\n", client_fd);
+	TempUser *found_temp_user = find_temp_user_with_fd(client_fd);
+	free_temp_user(found_temp_user);
+
 	write_message(client_fd, connection_closed_message());
 	close(client_fd);
 	FD_CLR(client_fd, allset);
@@ -991,6 +994,8 @@ int main(int argc, char * argv[])
 					client[i] = rec_sock; 
 					FD_SET(client[i], &allset);
 
+					printf("initial message written to the client.\n"); 
+
 					write_message(client[i], initial_messsage());
 
 					break;
@@ -1104,7 +1109,6 @@ int main(int argc, char * argv[])
 							}
 							else if (strcmp(userInput, "exit") == 0 || strcmp(userInput, "quit") == 0) {
 								client[i] = close_client_connection(client[i], &allset);
-								free_temp_user(found_temp_user);
 							}
 							// the guest needs to either enter the register command or exit
 							else {
@@ -1118,7 +1122,6 @@ int main(int argc, char * argv[])
 							printf("WAITING_PASSWORD_NOT_FOUND_STATUS.\n");
 							write_message(client[i], "Login failed!!\n");
 							client[i] = close_client_connection(client[i], &allset);
-							free_temp_user(found_temp_user);
 						}
 						// we previously found a username for this user
 						else if (found_temp_user->status == TEMP_USER_WAITING_ON_PASSWORD_STATUS || found_temp_user->status == TEMP_USER_ACTIVE_CONNECTION_PENDING_STATUS) {
@@ -1139,7 +1142,6 @@ int main(int argc, char * argv[])
 								write_message(client[i], "Login failed!!\n");
 								client[i] = close_client_connection(client[i], &allset);
 							}
-							free_temp_user(found_temp_user);
 						}
 
 					}
