@@ -3,12 +3,11 @@ import './App.css'
 
 import { Game } from './components/Game'
 import { NewUserForm } from './components/NewUserForm'
+import { Typography } from '@mui/material'
 
 function App() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  // const [userLoggedIn, setUserLoggedIn] = useState(false)
-
 
   const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUsername(event.target.value);
@@ -18,14 +17,13 @@ function App() {
     setPassword(event.target.value);
   }
 
-  // const handleClick: React.MouseEventHandler<HTMLButtonElement> = () => {
-  //   setCount((count) => count + 1)
-  // };
-
 
   return (
     <>
       <h1>Tic-Tac-Toe GUI</h1>
+      <Typography>
+        {'Logged in as: ' + username}
+      </Typography>
       <p>
         Click on the buttons to select a square
       </p>
@@ -36,9 +34,6 @@ function App() {
         password={password}
       />
       <div className="card">
-        {/* <button onClick={handleClick}>
-          count is {count}
-        </button> */}
         <Game/>
       </div>
     </>

@@ -4,7 +4,7 @@ import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import { Checkbox, Dialog, DialogContent, FormControlLabel } from '@mui/material'
+import { type AlertColor, Alert, Checkbox, Dialog, DialogContent, FormControlLabel, Snackbar } from '@mui/material'
 
 export interface NewUserFormProps {
   handleUsernameChange: (event: React.ChangeEvent<HTMLInputElement>) => void
@@ -23,7 +23,10 @@ export const NewUserForm: React.FC<NewUserFormProps> = ({
   const [open, setOpen] = useState(true)
   const [isRegistering, setIsRegistering] = useState(false)
 
-  
+  const [sendToast, setSendToast] = useState(false)
+  const [toastType, setToastType] = useState('error')
+  const [toastMessage, setToastMessage] = useState('')
+
   useEffect(() => {
     console.debug("Is the user registering?: ", isRegistering)
   }, [isRegistering])
@@ -57,12 +60,29 @@ export const NewUserForm: React.FC<NewUserFormProps> = ({
     })
     .then(data => {
       console.log('Success:', data)
-      setOpen(false)
+      setSendToast(true)
+      setToastType('success')
+      if (isRegistering) { 
+        setToastMessage("Successfully registered")
+      }
+      else {
+        setOpen(false)
+        setToastMessage("Successfully logged in")
+      }
+      
     })
     .catch((error) => {
       console.error('Error:', error)
+      setSendToast(true)
+      setToastType('error')
+      if (isRegistering) { 
+        setToastMessage("Error during registration")
+      }
+      else {
+        setToastMessage("Error during login")
+      }
     })
-  };
+  }
 
   return (
     <Dialog open={open}>
@@ -95,6 +115,20 @@ export const NewUserForm: React.FC<NewUserFormProps> = ({
               </Button>
             </Box>
           </Box>
+          <Snackbar
+              open={sendToast}
+              autoHideDuration={4000}
+              onClose={() => {setSendToast(false)}}
+            >
+              <Alert
+                onClose={() => {setSendToast(false)}}
+                severity={toastType as AlertColor}
+                variant="filled"
+                sx={{ width: '100%' }}
+              >
+                {toastMessage}
+              </Alert>
+            </Snackbar>
         </Container>
       </DialogContent>
     </Dialog>

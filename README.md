@@ -29,4 +29,4 @@ then `r PORT_NUM`
 ### Then run the front-end
     - `cd gui/tic-tac-toe-gui`
     - `npm install`
-    - `npm run dev`
+    - `npm run dev -- --port PORT_NUMBER`
