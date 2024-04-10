@@ -159,7 +159,7 @@ app.post('/api/telnet/register', async (req, res) => {
 
 // ASSUMES USER IS ALREADY LOGGED IN
 app.post('/api/telnet/command', async (req, res) => {
-    console.log("Register request body: ", req.body.command)
+    console.log("Command request body: ", req.body.command)
 
     try {
         connection.removeAllListeners()
@@ -185,6 +185,27 @@ app.post('/api/telnet/command', async (req, res) => {
         res.status(500).json({ message: 'Error communicating with telnet server', error: error.message });
     }
 })
+
+app.post('/api/telnet/quit', async (req, res) => {
+    console.log("Quitting...")
+
+    try {
+        connection.removeAllListeners()
+        connectedToServer = false
+        resetConnection = true
+        connection.end()
+
+        res.json({ message: 'Successfully quit from the server' })
+    }
+    catch (error) {
+        console.error('Telnet error:', error);
+        connectedToServer = false
+        resetConnection = true
+        // Communicate back the error through the HTTP response
+        res.status(500).json({ message: 'Error communicating with telnet server', error: error.message });
+    }
+})
+
 
 
 app.listen(port, () => {

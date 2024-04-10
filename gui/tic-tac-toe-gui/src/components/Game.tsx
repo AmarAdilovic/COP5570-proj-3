@@ -113,13 +113,6 @@ export const Game: React.FC<GameBoardProps> = () => {
         console.log('Success:', data.message)
         setOpenDialog(true)
         setServerResponse(data.message)
-        // TODO
-        // isMatchFormat(command)
-        // if it is a match RESPONSE (accepting another players match)
-
-        // Place is already taken
-        // Not your turn
-
         if (isMoveFormat(command) || command === 'refresh') {
             // parse the message to check if it is an invalid move (i.e., not the user's turn?)
             const parsedGame = parseGameData(data.message)
@@ -137,9 +130,32 @@ export const Game: React.FC<GameBoardProps> = () => {
         }
 
         if (command === 'quit' || command === 'exit') {
-          // TODO
-          // reload the current page
-          window.location.reload()
+          fetch('http://localhost:3000/api/telnet/quit', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+          .then(response => {
+            // Checks if the status code is not in the range 200-299
+            if (!response.ok) {
+                throw new Error('Network response was not ok')
+            }
+            return response.json()
+          })
+          .then(async data => {
+              console.log('Success:', data.message)
+              setOpenDialog(true)
+              setServerResponse('Successfully quit from the server, reloading page in 3 seconds')
+              await new Promise(resolve => setTimeout(resolve, 3000))
+              window.location.reload()
+          })
+          .catch((error) => {
+            console.error('Error:', error)
+            setOpenDialog(false)
+            setServerResponse('')
+          })
+      
         }
 
     })
