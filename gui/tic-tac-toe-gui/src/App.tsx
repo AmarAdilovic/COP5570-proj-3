@@ -17,16 +17,13 @@ function App() {
     setPassword(event.target.value);
   }
 
-
   return (
     <>
       <h1>Tic-Tac-Toe GUI</h1>
       <Typography>
         {'Logged in as: ' + username}
       </Typography>
-      <p>
-        Click on the buttons to select a square
-      </p>
+
       <NewUserForm
         handleUsernameChange={handleUsernameChange}
         handlePasswordChange={handlePasswordChange}

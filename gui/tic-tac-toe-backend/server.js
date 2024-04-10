@@ -31,17 +31,12 @@ app.post('/api/telnet/register', async (req, res) => {
     }
 
     // to determine which errors should be thrown to the client
-    // let loginFailed = false
-    // let registerFailed = false
-    //  1 === login successful, 2 === registration successful
     let statusCode = 0
 
     const params = {
       host: '0.0.0.0',
       port: telnet_port_number,
       setTimeout: 20000,
-    //   loginPrompt: RegExp('/username \(guest\)[: ]*$/i'),
-    //   passwordPrompt: RegExp('/password:/i'),
       negotiationMandatory: false
     }
 
@@ -58,18 +53,10 @@ app.post('/api/telnet/register', async (req, res) => {
         
             connection.on('timeout', function() {
                 console.log('socket timeout!')
-                // connection.end()
-                // reject(new Error('Telnet connection timeout'))
             })
         
             connection.on('close', function() {
                 console.log('connection closed')
-                // if (loginFailed) {
-                //     reject(new Error("The passed in username and password failed to login."))
-                // }
-                // if (registerFailed) {
-                //     reject(new Error("Could not register with the given username and password."))
-                // }
             })
         
             connection.on('data', async function(data) {
@@ -95,7 +82,6 @@ app.post('/api/telnet/register', async (req, res) => {
 
                         statusCode = 2
                         resolve()
-                        // connection.end()
                     } else if (dataString.includes("Please change the username")) {
                         console.log('\nRegistration failed, ending the connection\n')
 
@@ -200,13 +186,6 @@ app.post('/api/telnet/command', async (req, res) => {
     }
 })
 
-
-
-// await connection.connect(params);
-// // Assuming the command is sent in the request body
-// const commandResponse = await connection.send(req.body.command);
-// await connection.end();
-// res.json({ message: 'Success', response: commandResponse });
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

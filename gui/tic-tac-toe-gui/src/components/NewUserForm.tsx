@@ -27,10 +27,6 @@ export const NewUserForm: React.FC<NewUserFormProps> = ({
   const [toastType, setToastType] = useState('error')
   const [toastMessage, setToastMessage] = useState('')
 
-  useEffect(() => {
-    console.debug("Is the user registering?: ", isRegistering)
-  }, [isRegistering])
-
   const handleRegisteringChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setIsRegistering(event.target.checked)
   }
