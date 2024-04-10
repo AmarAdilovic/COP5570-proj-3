@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Container from '@mui/material/Container'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
@@ -26,10 +26,6 @@ export const NewUserForm: React.FC<NewUserFormProps> = ({
   const [sendToast, setSendToast] = useState(false)
   const [toastType, setToastType] = useState('error')
   const [toastMessage, setToastMessage] = useState('')
-
-  useEffect(() => {
-    console.debug("Is the user registering?: ", isRegistering)
-  }, [isRegistering])
 
   const handleRegisteringChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setIsRegistering(event.target.checked)
